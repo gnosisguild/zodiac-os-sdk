@@ -1,0 +1,39 @@
+{
+  "name": "zodiac-os",
+  "version": "1.0.0",
+  "author": "Gnosis Guild",
+  "license": "LGPL-3.0-only",
+  "homepage": "https://github.com/gnosisguild/zodiac-os-sdk",
+  "packageManager": "bun@1.1.12",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.mjs",
+    "require": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup --format esm,cjs",
+    "prepublishOnly": "bun run build",
+    "check:format": "prettier --list-different .",
+    "check:types": "tsc -p tsconfig.json",
+    "fix:format": "prettier --write .",
+    "test": "./test/runner/run_tests.sh"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.21",
+    "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@epic-web/invariant": "1.0.0",
+    "zodiac-roles-sdk": "^3.2.5"
+  }
+}
