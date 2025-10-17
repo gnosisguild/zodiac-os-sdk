@@ -1,23 +1,4 @@
-export const chains = [
-  { chainId: 1, shortName: 'eth' },
-  { chainId: 10, shortName: 'oeth' },
-  { chainId: 100, shortName: 'gno' },
-  { chainId: 11155111, shortName: 'sep' },
-  { chainId: 137, shortName: 'matic' },
-  { chainId: 1101, shortName: 'zkevm' },
-  { chainId: 42161, shortName: 'arb1' },
-  { chainId: 43114, shortName: 'avax' },
-  { chainId: 8453, shortName: 'base' },
-  { chainId: 84532, shortName: 'basesep' },
-  { chainId: 42220, shortName: 'celo' },
-  { chainId: 146, shortName: 'sonic' },
-  { chainId: 80094, shortName: 'berachain' },
-  { chainId: 130, shortName: 'unichain' },
-  { chainId: 480, shortName: 'wc' },
-  { chainId: 60808, shortName: 'bob' },
-  { chainId: 5000, shortName: 'mantle' },
-  { chainId: 43111, shortName: 'hemi' },
-  { chainId: 747474, shortName: 'katana' },
-  { chainId: 59144, shortName: 'linea' },
-  { chainId: 57073, shortName: 'ink' },
-] as const
+import { type ApplyConstellationPayload } from '@zodiac-os/api-types'
+
+export type ChainShortNames =
+  ApplyConstellationPayload['specification'][number]['chain']
