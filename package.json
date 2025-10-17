@@ -24,7 +24,7 @@
     "check:format": "prettier --list-different .",
     "check:types": "tsc -p tsconfig.json",
     "fix:format": "prettier --write .",
-    "test": "./test/runner/run_tests.sh"
+    "test": "bun test"
   },
   "devDependencies": {
     "@types/bun": "^1.2.21",
