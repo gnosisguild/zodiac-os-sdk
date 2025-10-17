@@ -17,6 +17,7 @@ export type Options = {
 const DEFAULT_BASE_URL = 'https://app.pilot.gnosisguild.org/api/v1'
 
 export class ApiClient {
+  private apiKey: string
   private baseUrl: string
   private _fetch: typeof fetch
   private headers: Record<string, string>
@@ -29,12 +30,17 @@ export class ApiClient {
 
     this._fetch = opts.fetch ?? fetch
     this.headers = opts.headers ?? {}
+    this.apiKey = opts.apiKey
   }
 
   private async postJson(endpoint: string, payload: unknown) {
     const res = await this._fetch(`${this.baseUrl}/${endpoint}`, {
       method: 'POST',
-      headers: { ...this.headers, 'content-type': 'application/json' },
+      headers: {
+        ...this.headers,
+        'content-type': 'application/json',
+        authorization: `Bearer ${this.apiKey}`,
+      },
       body: JSON.stringify(payload),
     })
     if (!res.ok) {
