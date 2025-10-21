@@ -113,36 +113,25 @@ export class ApiRequestError extends Error {
 async function handleApiError(response: Response): Promise<never> {
   const contentType = response.headers.get('content-type')
   if (contentType?.includes('application/json')) {
-    // Clone before attempting JSON parsing so we can fall back to text
-    const responseClone = response.clone()
+    const errorData = (await response.json()) as ApiErrorResponse
+    let error: ApiRequestError
     try {
-      const errorData = (await response.json()) as ApiErrorResponse
-      throw new ApiRequestError(errorData.error.message, {
+      error = new ApiRequestError(errorData.error.message, {
         status: response.status,
         statusText: response.statusText,
         details: errorData.error.details,
       })
-    } catch (jsonError) {
-      // If JSON parsing fails, try to read as string from the cloned response
-      try {
-        const text = await responseClone.text()
-        throw new ApiRequestError(`Unexpected error: ${text}`, {
+    } catch (jsonShapeError) {
+      error = new ApiRequestError(
+        `Failed parsing error response: ${jsonShapeError}`,
+        {
           status: response.status,
           statusText: response.statusText,
-          cause: jsonError,
-        })
-      } catch (textError) {
-        // If both JSON and text parsing fail, throw a generic error
-        throw new ApiRequestError(
-          `Unexpected error: ${response.status} ${response.statusText}`,
-          {
-            status: response.status,
-            statusText: response.statusText,
-            cause: textError,
-          }
-        )
-      }
+          details: errorData,
+        }
+      )
     }
+    throw error
   } else {
     // Not JSON, read as text directly
     const text = await response.text()
