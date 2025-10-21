@@ -56,10 +56,6 @@ export class ApiClient {
   async applyConstellation(
     payload: ApplyConstellationPayload
   ): Promise<ApplyConstellationResult> {
-    this.resolveConstellation({
-      specification: payload.specification,
-      source: payload.source,
-    })
     return await this.postJson('constellation/apply', payload)
   }
 
