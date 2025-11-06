@@ -5,16 +5,21 @@ import type {
   ResolveConstellationResult,
   ApiError as ApiErrorResponse,
 } from '@zodiac-os/api-types'
+import assert from 'assert'
 
 export type Options = {
-  workspace: string
-  apiKey: string
+  workspace?: string
+  apiKey?: string
   baseUrl?: string
   fetch?: typeof globalThis.fetch
   headers?: Record<string, string>
 }
 
-const DEFAULT_BASE_URL = 'https://app.pilot.gnosisguild.org/api/v1'
+const {
+  ZODIAC_OS_API_KEY,
+  ZODIAC_OS_WORKSPACE,
+  ZODIAC_OS_API_URL = 'https://app.pilot.gnosisguild.org/api/v1',
+} = process.env
 
 export class ApiClient {
   private apiKey: string
@@ -22,18 +27,32 @@ export class ApiClient {
   private _fetch: typeof fetch
   private headers: Record<string, string>
 
-  constructor(opts: Options) {
-    this.baseUrl =
-      (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, '') +
-      '/workspace/' +
-      opts.workspace
+  constructor({
+    baseUrl = ZODIAC_OS_API_URL,
+    workspace = ZODIAC_OS_WORKSPACE,
+    fetch: customFetch = fetch,
+    headers = {},
+    apiKey = ZODIAC_OS_API_KEY,
+  }: Options = {}) {
+    assert(
+      workspace,
+      'No workspace provided to the API client. Either pass it as the "workspace" option or set the ZODIAC_OS_WORKSPACE environment variable.'
+    )
 
-    this._fetch = opts.fetch ?? fetch
-    this.headers = opts.headers ?? {}
-    this.apiKey = opts.apiKey
+    this.baseUrl = baseUrl.replace(/\/$/, '') + '/workspace/' + workspace
+
+    this._fetch = customFetch
+    this.headers = headers
+
+    assert(
+      apiKey,
+      'No API key provided to the API client. Either pass it as the "apiKey" option or set the ZODIAC_OS_API_KEY environment variable.'
+    )
+
+    this.apiKey = apiKey
   }
 
-  private async postJson(endpoint: string, payload: unknown) {
+  protected async postJson(endpoint: string, payload: unknown) {
     const res = await this._fetch(`${this.baseUrl}/${endpoint}`, {
       method: 'POST',
       headers: {
@@ -47,25 +66,37 @@ export class ApiClient {
       await handleApiError(res)
     }
 
-    return await res.json()
+    return res.json()
+  }
+
+  protected async get(endpoint: string) {
+    const res = await this._fetch(`${this.baseUrl}/${endpoint}`, {
+      headers: { ...this.headers, authorization: `Bearer ${this.apiKey}` },
+    })
+
+    if (!res.ok) {
+      await handleApiError(res)
+    }
+
+    return res.json()
   }
 
   /**
    * Applies an accounts specification to Zodiac OS.
    */
-  async applyConstellation(
+  applyConstellation(
     payload: ApplyConstellationPayload
   ): Promise<ApplyConstellationResult> {
-    return await this.postJson('constellation/apply', payload)
+    return this.postJson('constellation/apply', payload)
   }
 
   /**
    * Resolves an accounts specification to Zodiac OS.
    */
-  async resolveConstellation(
+  resolveConstellation(
     payload: ResolveConstellationPayload
   ): Promise<ResolveConstellationResult> {
-    return await this.postJson('constellation/resolve', payload)
+    return this.postJson('constellation/resolve', payload)
   }
 }
 
