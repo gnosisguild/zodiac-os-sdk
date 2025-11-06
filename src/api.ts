@@ -15,10 +15,11 @@ export type Options = {
   headers?: Record<string, string>
 }
 
-const DEFAULT_BASE_URL = 'http://localhost:3040/api/v1'
-// const DEFAULT_BASE_URL = 'https://app.pilot.gnosisguild.org/api/v1'
-
-const { ZODIAC_OS_API_KEY, ZODIAC_OS_WORKSPACE } = process.env
+const {
+  ZODIAC_OS_API_KEY,
+  ZODIAC_OS_WORKSPACE,
+  ZODIAC_OS_API_URL = 'https://app.pilot.gnosisguild.org/api/v1',
+} = process.env
 
 export class ApiClient {
   private apiKey: string
@@ -27,7 +28,7 @@ export class ApiClient {
   private headers: Record<string, string>
 
   constructor({
-    baseUrl = DEFAULT_BASE_URL,
+    baseUrl = ZODIAC_OS_API_URL,
     workspace = ZODIAC_OS_WORKSPACE,
     fetch: customFetch = fetch,
     headers = {},

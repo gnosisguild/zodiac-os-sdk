@@ -5,13 +5,12 @@
   "license": "LGPL-3.0-only",
   "homepage": "https://github.com/gnosisguild/zodiac-os-sdk",
   "packageManager": "bun@1.1.12",
-  "main": "dist/index.js",
+  "type": "module",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     "types": "./dist/index.d.ts",
-    "import": "./dist/index.mjs",
-    "require": "./dist/index.js"
+    "import": "./dist/index.mjs"
   },
   "files": [
     "dist",
@@ -44,7 +43,7 @@
     "@babel/generator": "^7.28.5",
     "@babel/types": "^7.28.5",
     "@epic-web/invariant": "1.0.0",
-    "@zodiac-os/api-types": "link:@zodiac-os/api-types",
+    "@zodiac-os/api-types": "1.4.0",
     "arg": "^5.0.2",
     "zodiac-roles-sdk": "^3.3.2"
   }

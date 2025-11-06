@@ -3,11 +3,10 @@ import { defineConfig } from 'tsup'
 export default defineConfig([
   {
     name: 'zodiac-os-sdk',
-    target: 'es2020',
-    format: ['cjs', 'esm'],
+    target: 'es2024',
+    format: 'esm',
     sourcemap: true,
     entry: ['./src/index.ts'],
-    cjsInterop: true,
     clean: true,
     dts: {
       resolve: true,
