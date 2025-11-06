@@ -4,6 +4,7 @@ export default defineConfig([
   {
     name: 'zodiac-os-sdk',
     target: 'es2020',
+    format: ['cjs', 'esm'],
     sourcemap: true,
     entry: ['./src/index.ts'],
     cjsInterop: true,
@@ -15,6 +16,7 @@ export default defineConfig([
   {
     name: 'cli',
     target: 'node24',
+    format: 'cjs',
     entry: ['./cli/index.ts'],
     outDir: 'lib',
   },
