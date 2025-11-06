@@ -1,6 +1,7 @@
 import { InternalApiClient } from '../internalApi'
 import * as t from '@babel/types'
 import { generate } from '@babel/generator'
+import { mkdirSync, writeFileSync } from 'fs'
 
 export const typegen = async () => {
   const client = new InternalApiClient()
@@ -23,5 +24,8 @@ export const typegen = async () => {
     )
   )
 
-  console.log(vaultsEnum)
+  const cwd = process.cwd()
+
+  mkdirSync(`${cwd}/.zodiac-os/types`, { recursive: true })
+  writeFileSync(`${cwd}/.zodiac-os/types/index.ts`, vaultsEnum.code)
 }
