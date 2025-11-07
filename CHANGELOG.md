@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.1.1...v1.1.2) (2025-11-07)
+
+
+### Bug Fixes
+
+* point exports at the correct files ([730492f](https://github.com/gnosisguild/zodiac-os-sdk/commit/730492fa202513fe6e38033193dde8281f2c9829))
+
 ## [1.1.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.1.0...v1.1.1) (2025-11-07)
 
 
