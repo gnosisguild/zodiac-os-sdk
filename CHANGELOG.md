@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.0.0...v1.1.0) (2025-11-07)
+
+
+### Features
+
+* improve readme ([451c6b5](https://github.com/gnosisguild/zodiac-os-sdk/commit/451c6b5d560e801eae11036d0c15f05f642d7b10))
+
 ## 1.0.0 (2025-11-06)
 
 
