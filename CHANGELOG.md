@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.1.0...v1.1.1) (2025-11-07)
+
+
+### Bug Fixes
+
+* add repository url ([7643fa9](https://github.com/gnosisguild/zodiac-os-sdk/commit/7643fa9dc401c9d127bc96b5f2f082f3791c24b5))
+
 ## [1.1.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.0.0...v1.1.0) (2025-11-07)
 
 
