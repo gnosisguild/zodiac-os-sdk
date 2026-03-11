@@ -1,5 +1,5 @@
 import arg from 'arg'
-import { typegen } from './commands'
+import { codegen } from './commands'
 
 export const run = async (argv: string[] = process.argv.slice(2)) => {
   const args = arg({}, { argv })
@@ -9,8 +9,8 @@ export const run = async (argv: string[] = process.argv.slice(2)) => {
   const [command] = input
 
   switch (command) {
-    case 'typegen': {
-      await typegen()
+    case 'codegen': {
+      await codegen()
       break
     }
 

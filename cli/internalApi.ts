@@ -1,5 +1,5 @@
 import { ApiClient } from '../src'
-import { ListVaultsResult } from '@zodiac-os/api-types'
+import { ListVaultsResult, ListUsersResult } from '@zodiac-os/api-types'
 
 export class InternalApiClient extends ApiClient {
   listVaults(): Promise<ListVaultsResult> {

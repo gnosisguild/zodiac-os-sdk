@@ -2,7 +2,7 @@ import { InternalApiClient } from '../internalApi'
 import { Project } from 'ts-morph'
 import { mkdirSync } from 'fs'
 
-export const typegen = async () => {
+export const codegen = async () => {
   const client = new InternalApiClient()
 
   const vaults = await client.listVaults()

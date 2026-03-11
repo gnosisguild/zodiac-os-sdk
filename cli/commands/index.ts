@@ -1,1 +1,1 @@
-export { typegen } from './typegen'
+export { codegen } from './codegen'

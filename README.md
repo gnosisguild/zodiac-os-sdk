@@ -1,12 +1,12 @@
 # Zodiac OS SDK
 
-Programmatically manage Safe + Zodiac account constellations with [Zodiac OS](https://pilot.gnosisguild.org)
+Programmatically manage [Zodiac](https://www.zodiac.eco) account constellations
 
 ## Getting started
 
 ### Generate a Zodiac OS API key
 
-Sign in to https://app.pilot.gnosisguild.org and create an API key at https://app.pilot.gnosisguild.org/admin/api-keys
+Sign in to https://app.zodiac.eco and create an API key at https://app.zodiac.eco/admin/api-keys
 
 ## API Client options
 
