@@ -21,7 +21,7 @@ export const typegen = async () => {
     isExported: true,
     name: 'Vault',
     members: vaults.map((vault) => ({
-      name: vault.label.replaceAll(/ /g, '_'),
+      name: vault.label,
       value: vault.id,
     })),
   })
