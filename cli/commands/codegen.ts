@@ -1,11 +1,14 @@
 import { InternalApiClient } from '../internalApi'
-import { Project } from 'ts-morph'
+import { Project, VariableDeclarationKind } from 'ts-morph'
 import { mkdirSync } from 'fs'
 
 export const codegen = async () => {
   const client = new InternalApiClient()
 
-  const vaults = await client.listVaults()
+  const [users, vaults] = await Promise.all([
+    client.listUsers(),
+    client.listVaults(),
+  ])
 
   const cwd = process.cwd()
   const typesDir = `${cwd}/.zodiac-os/types`
@@ -17,13 +20,26 @@ export const codegen = async () => {
     overwrite: true,
   })
 
-  sourceFile.addEnum({
+  sourceFile.addVariableStatement({
     isExported: true,
-    name: 'Vault',
-    members: vaults.map((vault) => ({
-      name: vault.label,
-      value: vault.id,
-    })),
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [
+      {
+        name: 'users',
+        initializer: `${JSON.stringify(users, null, 2)} as const`,
+      },
+    ],
+  })
+
+  sourceFile.addVariableStatement({
+    isExported: true,
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [
+      {
+        name: 'vaults',
+        initializer: `${JSON.stringify(vaults, null, 2)} as const`,
+      },
+    ],
   })
 
   await sourceFile.save()
