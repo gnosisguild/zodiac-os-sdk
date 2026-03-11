@@ -18,7 +18,7 @@ export type Options = {
 const {
   ZODIAC_OS_API_KEY,
   ZODIAC_OS_WORKSPACE,
-  ZODIAC_OS_API_URL = 'https://app.pilot.gnosisguild.org/api/v1',
+  ZODIAC_OS_API_URL = 'https://app.zodiac.eco/api/v1',
 } = process.env
 
 export class ApiClient {
@@ -166,7 +166,7 @@ async function handleApiError(response: Response): Promise<never> {
   } else {
     // Not JSON, read as text directly
     const text = await response.text()
-    throw new ApiRequestError(`Unexpected error: ${text}`, {
+    throw new ApiRequestError(text || 'Unexpected error', {
       status: response.status,
       statusText: response.statusText,
     })
