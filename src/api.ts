@@ -6,6 +6,7 @@ import type {
   ApiError as ApiErrorResponse,
 } from '@zodiac-os/api-types'
 import assert from 'assert'
+import { UUID } from 'crypto'
 
 export type Options = {
   workspace?: string
@@ -17,7 +18,6 @@ export type Options = {
 
 const {
   ZODIAC_OS_API_KEY,
-  ZODIAC_OS_WORKSPACE,
   ZODIAC_OS_API_URL = 'https://app.zodiac.eco/api/v1',
 } = process.env
 
@@ -29,18 +29,11 @@ export class ApiClient {
 
   constructor({
     baseUrl = ZODIAC_OS_API_URL,
-    workspace = ZODIAC_OS_WORKSPACE,
     fetch: customFetch = fetch,
     headers = {},
     apiKey = ZODIAC_OS_API_KEY,
   }: Options = {}) {
-    assert(
-      workspace,
-      'No workspace provided to the API client. Either pass it as the "workspace" option or set the ZODIAC_OS_WORKSPACE environment variable.'
-    )
-
-    this.baseUrl = baseUrl.replace(/\/$/, '') + '/workspace/' + workspace
-
+    this.baseUrl = baseUrl.replace(/\/$/, '')
     this._fetch = customFetch
     this.headers = headers
 
@@ -85,18 +78,26 @@ export class ApiClient {
    * Applies an accounts specification to Zodiac OS.
    */
   applyConstellation(
+    workspaceId: UUID,
     payload: ApplyConstellationPayload
   ): Promise<ApplyConstellationResult> {
-    return this.postJson('constellation/apply', payload)
+    return this.postJson(
+      `workspace/${workspaceId}/constellation/apply`,
+      payload
+    )
   }
 
   /**
    * Resolves an accounts specification to Zodiac OS.
    */
   resolveConstellation(
+    workspaceId: UUID,
     payload: ResolveConstellationPayload
   ): Promise<ResolveConstellationResult> {
-    return this.postJson('constellation/resolve', payload)
+    return this.postJson(
+      `workspace/${workspaceId}/constellation/resolve`,
+      payload
+    )
   }
 }
 

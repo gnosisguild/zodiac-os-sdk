@@ -44,9 +44,11 @@
   },
   "dependencies": {
     "@epic-web/invariant": "1.0.0",
+    "@gnosis-guild/eth-sdk": "^0.4.0",
+    "@gnosis-guild/eth-sdk-client": "^0.1.6",
     "@zodiac-os/api-types": "1.4.0",
-    "arg": "^5.0.2",
+    "commander": "^14.0.3",
     "ts-morph": "^27.0.2",
-    "zodiac-roles-sdk": "^3.3.2"
+    "zodiac-roles-sdk": "^3.4.7"
   }
 }
