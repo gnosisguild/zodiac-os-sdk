@@ -1,3 +1,7 @@
+/// <reference path="./zodiac-os-codegen.d.ts" />
+import { createRequire } from 'module'
+import type * as ZodiacOsCodegen from '.zodiac-os'
+
 type User = {
   id: string
   fullName: string
@@ -20,25 +24,65 @@ type WorkspaceVaults = {
   vaults: Readonly<Record<string, Vault>>
 }
 
-type CodegenData = {
+export type CodegenData = {
   users: Readonly<Record<string, User>>
   vaults: Readonly<Record<string, WorkspaceVaults>>
+}
+
+type GeneratedCodegen = {
+  users: typeof ZodiacOsCodegen.users
+  vaults: typeof ZodiacOsCodegen.vaults
 }
 
 type ConstellationOpts = {
   workspace: string
   label: string
   chain: number
-  codegen: CodegenData
+}
+
+type ConstellationInternalOpts<C extends CodegenData> = {
+  codegen?: C
 }
 
 type NodeRef = Readonly<Record<string, any>>
 
-export function constellation(opts: ConstellationOpts) {
+// Extract all vault labels across all workspaces
+type AllVaultLabels<C extends CodegenData> = {
+  [K in keyof C['vaults']]: keyof C['vaults'][K]['vaults']
+}[keyof C['vaults']] &
+  string
+
+type EntityAccessor<Labels extends string> = ((
+  props: Record<string, any>
+) => NodeRef) & {
+  readonly [K in Labels]: (overrides?: Record<string, any>) => NodeRef
+}
+
+type UserAccessor<Handles extends string> = {
+  readonly [K in Handles]: string
+}
+
+type ConstellationResult<C extends CodegenData> = {
+  safe: EntityAccessor<AllVaultLabels<C>>
+  roles: EntityAccessor<AllVaultLabels<C>>
+  user: UserAccessor<keyof C['users'] & string>
+  _nodes: NodeRef[]
+}
+
+function loadCodegen(): CodegenData {
+  const require = createRequire(import.meta.url)
+  return require('.zodiac-os') as CodegenData
+}
+
+export function constellation<const C extends CodegenData = GeneratedCodegen>(
+  opts: ConstellationOpts,
+  internal?: ConstellationInternalOpts<C>
+): ConstellationResult<C> {
+  const codegen: CodegenData = internal?.codegen ?? loadCodegen()
   const nodes: NodeRef[] = []
 
   const vaultsByLabel: Record<string, Vault> = {}
-  for (const ws of Object.values(opts.codegen.vaults)) {
+  for (const ws of Object.values(codegen.vaults)) {
     for (const [label, vault] of Object.entries(ws.vaults)) {
       vaultsByLabel[label] = vault
     }
@@ -80,7 +124,7 @@ export function constellation(opts: ConstellationOpts) {
       {},
       {
         get(_target: any, name: string) {
-          const user = opts.codegen.users[name]
+          const user = codegen.users[name]
           if (!user) throw new Error(`Unknown user: ${name}`)
           const personalSafe = user.personalSafes[opts.chain]
           if (!personalSafe) {
@@ -99,5 +143,5 @@ export function constellation(opts: ConstellationOpts) {
     roles: entityAccessor(vaultsByLabel, 'ROLES'),
     user: userAccessor(),
     _nodes: nodes,
-  }
+  } as ConstellationResult<C>
 }
