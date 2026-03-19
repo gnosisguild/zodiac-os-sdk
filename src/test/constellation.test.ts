@@ -2,14 +2,6 @@ import { describe, it, expect } from 'bun:test'
 import { constellation } from '../constellation'
 import * as codegen from './codegen.mock'
 
-const vaultByLabel = (label: string) => {
-  for (const ws of Object.values(codegen.vaults)) {
-    const v = ws.vaults[label as keyof typeof ws.vaults]
-    if (v) return v
-  }
-  throw new Error(`Vault not found: ${label}`)
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -21,7 +13,7 @@ describe('constellation API', () => {
         { workspace: 'GG', label: 'My Test Constellation', chain: 1 },
         { codegen }
       )
-      expect(eth.safe['']).toBeDefined()
+      expect(eth.safe).toBeDefined()
       expect(eth.roles).toBeDefined()
       expect(eth.user).toBeDefined()
     })
@@ -30,7 +22,7 @@ describe('constellation API', () => {
   describe('existing safe — bracket access', () => {
     function setup() {
       return constellation(
-        { workspace: 'w', label: 'l', chain: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -41,8 +33,8 @@ describe('constellation API', () => {
       const ggDao = eth.safe['GG DAO']()
 
       expect(ggDao.label).toBe('GG DAO')
-      expect(ggDao.address).toBe(vaultByLabel('GG DAO').address)
-      expect(ggDao.threshold).toBe(vaultByLabel('GG DAO').threshold)
+      expect(ggDao.address).toBe(codegen.vaults.GG.vaults['GG DAO'].address)
+      expect(ggDao.threshold).toBe(codegen.vaults.GG.vaults['GG DAO'].threshold)
       expect(ggDao.type).toBe('SAFE')
     })
 
@@ -52,7 +44,7 @@ describe('constellation API', () => {
       const treasury = eth.safe['Treasury']()
 
       expect(treasury.label).toBe('Treasury')
-      expect(treasury.address).toBe(vaultByLabel('Treasury').address)
+      expect(treasury.address).toBe(codegen.vaults.GG.vaults.Treasury.address)
     })
 
     it('returns a frozen (non-callable) node ref', () => {
@@ -62,10 +54,10 @@ describe('constellation API', () => {
     })
   })
 
-  describe('new safe — direct call', () => {
+  describe('new safe — .new()', () => {
     function setup() {
       return constellation(
-        { workspace: 'w', label: 'l', chain: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -74,7 +66,7 @@ describe('constellation API', () => {
       const eth = setup()
       const ggDaoRoles = eth.roles['GG DAO']({})
 
-      const newSafe = eth.safe({
+      const newSafe = eth.safe.new({
         label: 'New Safe',
         nonce: 0n,
         threshold: 2,
@@ -93,7 +85,7 @@ describe('constellation API', () => {
 
     it('returns a frozen (non-callable) node ref', () => {
       const eth = setup()
-      const newSafe = eth.safe({
+      const newSafe = eth.safe.new({
         label: 'Brand New',
         nonce: 1n,
         threshold: 1,
@@ -107,7 +99,7 @@ describe('constellation API', () => {
   describe('existing roles — bracket access', () => {
     it('returns canonical roles mod with config applied', () => {
       const eth = constellation(
-        { workspace: 'w', label: 'l', chain: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
 
@@ -128,15 +120,15 @@ describe('constellation API', () => {
     })
   })
 
-  describe('new roles — direct call', () => {
+  describe('new roles — .new()', () => {
     it('creates a new roles mod with explicit target', () => {
       const eth = constellation(
-        { workspace: 'w', label: 'l', chain: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
       const ggDao = eth.safe['GG DAO']()
 
-      const newRoles = eth.roles({
+      const newRoles = eth.roles.new({
         nonce: 123n,
         target: ggDao,
       })
@@ -150,7 +142,7 @@ describe('constellation API', () => {
   describe('user accessor', () => {
     function setup() {
       return constellation(
-        { workspace: 'w', label: 'l', chain: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -172,7 +164,7 @@ describe('constellation API', () => {
   describe('explicit export — no side-effects', () => {
     function setup() {
       return constellation(
-        { workspace: 'w', label: 'l', chain: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -200,7 +192,7 @@ describe('constellation API', () => {
       eth.roles['GG DAO']({})
       expect(eth._nodes).toHaveLength(2)
 
-      eth.safe({
+      eth.safe.new({
         label: 'New',
         nonce: 0n,
         threshold: 1,
@@ -215,7 +207,7 @@ describe('constellation API', () => {
 
       const ggDao = eth.safe['GG DAO']()
       const ggDaoRoles = eth.roles['GG DAO']({ roles: {} })
-      const newSafe = eth.safe({
+      const newSafe = eth.safe.new({
         label: 'New',
         nonce: 0n,
         threshold: 1,
@@ -233,7 +225,7 @@ describe('constellation API', () => {
   describe('node references are usable in other nodes', () => {
     function setup() {
       return constellation(
-        { workspace: 'w', label: 'l', chain: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -242,7 +234,7 @@ describe('constellation API', () => {
       const eth = setup()
 
       const ggDaoRoles = eth.roles['GG DAO']({})
-      const newSafe = eth.safe({
+      const newSafe = eth.safe.new({
         label: 'Managed Safe',
         nonce: 0n,
         threshold: 1,
@@ -257,12 +249,64 @@ describe('constellation API', () => {
       const eth = setup()
 
       const ggDao = eth.safe['GG DAO']()
-      const newRoles = eth.roles({
+      const newRoles = eth.roles.new({
         nonce: 1n,
         target: ggDao,
       })
 
       expect(newRoles.target).toBe(ggDao)
+    })
+  })
+
+  describe('workspace scoping', () => {
+    it('only exposes vaults from the selected workspace', () => {
+      const gg = constellation(
+        { workspace: 'GG', label: 'l', chain: 1 },
+        { codegen }
+      )
+
+      // GG workspace vaults are accessible
+      const treasury = gg.safe['Treasury']()
+      expect(treasury.label).toBe('Treasury')
+
+      const ggDao = gg.safe['GG DAO']()
+      expect(ggDao.label).toBe('GG DAO')
+
+      // Ops Fund is NOT in the GG workspace — accessing it returns a node
+      // without any pre-filled properties from codegen
+      const opsFund = (gg.safe as any)['Ops Fund']()
+      expect(opsFund.address).toBeUndefined()
+    })
+
+    it('exposes vaults from the second workspace when selected', () => {
+      const second = constellation(
+        { workspace: 'Second Space', label: 'l', chain: 1 },
+        { codegen }
+      )
+
+      // Second Space vault is accessible with codegen data
+      const opsFund = second.safe['Ops Fund']()
+      expect(opsFund.label).toBe('Ops Fund')
+      expect(opsFund.address).toBe('0xffff00000000000000000000000000000000ffff')
+
+      // GG DAO is NOT in Second Space — no codegen data
+      const ggDao = (second.safe as any)['GG DAO']()
+      expect(ggDao.address).toBeUndefined()
+    })
+
+    it('roles accessor is also scoped to the workspace', () => {
+      const gg = constellation(
+        { workspace: 'GG', label: 'l', chain: 1 },
+        { codegen }
+      )
+
+      const roles = gg.roles['GG DAO']({})
+      expect(roles.label).toBe('GG DAO')
+      expect(roles.type).toBe('ROLES')
+
+      // Ops Fund roles should have no codegen data
+      const opsFundRoles = (gg.roles as any)['Ops Fund']({})
+      expect(opsFundRoles.address).toBeUndefined()
     })
   })
 })

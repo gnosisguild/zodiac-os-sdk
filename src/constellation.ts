@@ -1,4 +1,5 @@
 /// <reference path="./zodiac-os-codegen.d.ts" />
+import { ChainId } from '@zodiac-os/api-types'
 import { createRequire } from 'module'
 import type * as ZodiacOsCodegen from '.zodiac-os'
 
@@ -34,10 +35,10 @@ type GeneratedCodegen = {
   vaults: typeof ZodiacOsCodegen.vaults
 }
 
-type ConstellationOpts = {
-  workspace: string
+type ConstellationOpts<C extends CodegenData> = {
+  workspace: keyof C['vaults'] & string
   label: string
-  chain: number
+  chain: ChainId
 }
 
 type ConstellationInternalOpts<C extends CodegenData> = {
@@ -46,25 +47,37 @@ type ConstellationInternalOpts<C extends CodegenData> = {
 
 type NodeRef = Readonly<Record<string, any>>
 
-// Extract all vault labels across all workspaces
-type AllVaultLabels<C extends CodegenData> = {
-  [K in keyof C['vaults']]: keyof C['vaults'][K]['vaults']
-}[keyof C['vaults']] &
-  string
+// Extract vault entries for a specific workspace
+type WorkspaceVaultEntries<
+  C extends CodegenData,
+  W extends keyof C['vaults'],
+> = C['vaults'][W]['vaults']
 
-type EntityAccessor<Labels extends string> = ((
-  props: Record<string, any>
-) => NodeRef) & {
-  readonly [K in Labels]: (overrides?: Record<string, any>) => NodeRef
+type EntityAccessor<
+  Type extends string,
+  Entries extends Record<string, any>,
+> = {
+  readonly [K in keyof Entries & string]: <
+    O extends Record<string, any> = {},
+  >(
+    overrides?: O
+  ) => Readonly<Entries[K] & O & { type: Type; label: K; __chain: number }>
+} & {
+  new: <P extends Record<string, any>>(
+    props: P
+  ) => Readonly<P & { type: Type; __chain: number }>
 }
 
 type UserAccessor<Handles extends string> = {
   readonly [K in Handles]: string
 }
 
-type ConstellationResult<C extends CodegenData> = {
-  safe: EntityAccessor<AllVaultLabels<C>>
-  roles: EntityAccessor<AllVaultLabels<C>>
+type ConstellationResult<
+  C extends CodegenData,
+  W extends keyof C['vaults'] = keyof C['vaults'],
+> = {
+  safe: EntityAccessor<'SAFE', WorkspaceVaultEntries<C, W>>
+  roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>>
   user: UserAccessor<keyof C['users'] & string>
   _nodes: NodeRef[]
 }
@@ -74,15 +87,19 @@ function loadCodegen(): CodegenData {
   return require('.zodiac-os') as CodegenData
 }
 
-export function constellation<const C extends CodegenData = GeneratedCodegen>(
-  opts: ConstellationOpts,
+export function constellation<
+  const C extends CodegenData = GeneratedCodegen,
+  const W extends keyof C['vaults'] & string = keyof C['vaults'] & string,
+>(
+  opts: ConstellationOpts<C> & { workspace: W },
   internal?: ConstellationInternalOpts<C>
-): ConstellationResult<C> {
+): ConstellationResult<C, W> {
   const codegen: CodegenData = internal?.codegen ?? loadCodegen()
   const nodes: NodeRef[] = []
 
+  const ws = codegen.vaults[opts.workspace]
   const vaultsByLabel: Record<string, Vault> = {}
-  for (const ws of Object.values(codegen.vaults)) {
+  if (ws) {
     for (const [label, vault] of Object.entries(ws.vaults)) {
       vaultsByLabel[label] = vault
     }
@@ -98,25 +115,25 @@ export function constellation<const C extends CodegenData = GeneratedCodegen>(
     registry: Record<string, Record<string, any>>,
     type: string
   ) {
-    return new Proxy(
-      function create(props: Record<string, any>) {
-        return makeNodeRef({ type, ...props })
+    const create = (props: Record<string, any>) => {
+      return makeNodeRef({ type, ...props })
+    }
+
+    return new Proxy({} as Record<string, any>, {
+      get(_target: any, name: string) {
+        if (typeof name !== 'string') return undefined
+        if (name === 'new') return create
+        const existing = registry[name]
+        return (overrides?: Record<string, any>) => {
+          return makeNodeRef({
+            type,
+            ...(existing || {}),
+            ...overrides,
+            label: name,
+          })
+        }
       },
-      {
-        get(_target: any, name: string) {
-          if (typeof name !== 'string') return undefined
-          const existing = registry[name]
-          return (overrides?: Record<string, any>) => {
-            return makeNodeRef({
-              type,
-              ...(existing || {}),
-              ...overrides,
-              label: name,
-            })
-          }
-        },
-      }
-    )
+    })
   }
 
   function userAccessor() {

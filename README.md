@@ -23,7 +23,7 @@ import { defineConfig } from '@zodiac-os/sdk/cli/config'
 
 export default defineConfig({
   apiKey: 'zodiac_your-api-key',
-  // Optional: contract addresses for eth-sdk ABI fetching
+  // Optional: contracts to fetch for permissions authoring
   contracts: {
     mainnet: {
       dai: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
@@ -39,31 +39,31 @@ export default defineConfig({
 zodiac-os pull
 ```
 
-This generates typed data in `.zodiac-os/types/index.ts` with your org's users and vaults.
+This generates typed data in `node_modules/.zodiac-os/` with your org's users and vaults.
 
 ## Constellation API
 
-The `constellation()` function is the main SDK entry point. It takes the codegen output and returns an API for declaring account constellations — the set of Safes, Roles mods, and users that make up your on-chain setup.
+The `constellation()` function is the main SDK entry point. It returns an API for declaring account constellations — the set of Safes, Roles mods, and users that make up your on-chain setup.
 
 ```ts
 import { constellation } from '@zodiac-os/sdk'
-import * as codegen from './.zodiac-os/types'
 ```
 
-### Scoping to a chain
+### Scoping to a workspace and chain
+
+Each constellation is scoped to a single workspace and chain. The `workspace` option only accepts workspace names from your org.
 
 ```ts
 const eth = constellation({
-  workspace: 'my-org',
+  workspace: 'GG',
   label: 'Production',
   chain: 1,
-  codegen,
 })
 ```
 
 ### Referencing existing accounts
 
-Bracket access gives you existing Safes and Roles mods from your org. Names auto-complete from the codegen output.
+Bracket access gives you existing Safes and Roles mods from the selected workspace. Names auto-complete from the codegen output.
 
 ```ts
 // Reference an existing Safe (all properties are already known from codegen)
@@ -85,11 +85,11 @@ const ggDaoRoles = eth.roles['GG DAO']({
 
 ### Creating new accounts
 
-Call `eth.safe(...)` or `eth.roles(...)` directly to create new nodes:
+Use `.new(...)` on `eth.safe` or `eth.roles` to create new nodes:
 
 ```ts
 // New Safe — all required fields must be provided
-const newSafe = eth.safe({
+const newSafe = eth.safe.new({
   label: 'New Safe',
   nonce: 0n,
   threshold: 2,
@@ -101,7 +101,7 @@ const newSafe = eth.safe({
 })
 
 // New Roles mod targeting an existing Safe
-const newRoles = eth.roles({
+const newRoles = eth.roles.new({
   nonce: 123n,
   target: ggDao,
 })

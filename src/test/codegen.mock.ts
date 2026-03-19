@@ -56,4 +56,19 @@ export const vaults = {
       },
     },
   },
+  'Second Space': {
+    workspaceId: 'ws-2',
+    workspaceName: 'Second Space',
+    vaults: {
+      'Ops Fund': {
+        id: 'vault-3',
+        label: 'Ops Fund',
+        address: '0xffff00000000000000000000000000000000ffff',
+        chainId: 1,
+        threshold: 1,
+        owners: ['0xaaaa00000000000000000000000000000000aaaa'],
+        modules: [],
+      },
+    },
+  },
 } as const
