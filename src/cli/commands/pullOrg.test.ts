@@ -78,24 +78,24 @@ describe('pullOrg', () => {
     )
 
     expect(output).toBe(
-      `export const users = [
-      {
+      `export const users = {
+      "Alice Example": {
         id: "user-1",
         fullName: "Alice Example",
         personalSafes: {},
       },
-      {
+      "Bob Example": {
         id: "user-2",
         fullName: "Bob Example",
         personalSafes: {},
       },
-    ] as const;
-export const vaults = [
-      {
+    } as const;
+export const vaults = {
+      "Test Workspace": {
         workspaceId: "ws-1",
         workspaceName: "Test Workspace",
-        vaults: [
-          {
+        vaults: {
+          Treasury: {
             id: "vault-1",
             label: "Treasury",
             address: "0xaaaa00000000000000000000000000000000aaaa",
@@ -108,9 +108,9 @@ export const vaults = [
             ],
             modules: [],
           },
-        ],
+        },
       },
-    ] as const;
+    } as const;
 `
     )
   })

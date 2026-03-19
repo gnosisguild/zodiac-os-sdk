@@ -2,6 +2,14 @@ import { describe, it, expect } from "bun:test";
 import { constellation } from "../constellation";
 import * as codegen from "./codegen.mock";
 
+const vaultByLabel = (label: string) => {
+  for (const ws of Object.values(codegen.vaults)) {
+    const v = ws.vaults[label as keyof typeof ws.vaults];
+    if (v) return v;
+  }
+  throw new Error(`Vault not found: ${label}`);
+};
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -34,12 +42,11 @@ describe("constellation API", () => {
     it("returns a node ref with existing properties merged with overrides", () => {
       const eth = setup();
 
-      const ggDao = eth.safe["GG DAO"]({ vault: false });
+      const ggDao = eth.safe["GG DAO"]();
 
       expect(ggDao.label).toBe("GG DAO");
-      expect(ggDao.address).toBe(codegen.safes["GG DAO"].address);
-      expect(ggDao.vault).toBe(false); // overridden from true
-      expect(ggDao.threshold).toBe(codegen.safes["GG DAO"].threshold);
+      expect(ggDao.address).toBe(vaultByLabel("GG DAO").address);
+      expect(ggDao.threshold).toBe(vaultByLabel("GG DAO").threshold);
       expect(ggDao.type).toBe("SAFE");
     });
 
@@ -49,8 +56,7 @@ describe("constellation API", () => {
       const treasury = eth.safe["Treasury"]();
 
       expect(treasury.label).toBe("Treasury");
-      expect(treasury.vault).toBe(true); // existing value preserved
-      expect(treasury.address).toBe(codegen.safes["Treasury"].address);
+      expect(treasury.address).toBe(vaultByLabel("Treasury").address);
     });
 
     it("returns a frozen (non-callable) node ref", () => {
@@ -79,7 +85,7 @@ describe("constellation API", () => {
         nonce: 0n,
         threshold: 2,
         owners: [
-          eth.user["jan@gnosisguild.org"],
+          eth.user["Alice Sample"],
           "0xb8e48df6818d3cbc648b3e8ec248a4f547135f7a",
         ],
         modules: [ggDaoRoles],
@@ -163,8 +169,8 @@ describe("constellation API", () => {
 
     it("resolves a known user to their address", () => {
       const eth = setup();
-      const addr = eth.user["jan@gnosisguild.org"];
-      expect(addr).toBe(codegen.users["jan@gnosisguild.org"].address);
+      const addr = eth.user["Alice Sample"];
+      expect(addr).toBe(codegen.users["Alice Sample"].personalSafes[1].address);
     });
 
     it("throws for unknown users", () => {
@@ -221,7 +227,7 @@ describe("constellation API", () => {
     it("all materialized nodes are in the internal tracking list", () => {
       const eth = setup();
 
-      const ggDao = eth.safe["GG DAO"]({ vault: true });
+      const ggDao = eth.safe["GG DAO"]();
       const ggDaoRoles = eth.roles["GG DAO"]({ roles: {} });
       const newSafe = eth.safe({
         label: "New",
@@ -256,7 +262,7 @@ describe("constellation API", () => {
         label: "Managed Safe",
         nonce: 0n,
         threshold: 1,
-        owners: [eth.user["jan@gnosisguild.org"]],
+        owners: [eth.user["Alice Sample"]],
         modules: [ggDaoRoles],
       });
 
