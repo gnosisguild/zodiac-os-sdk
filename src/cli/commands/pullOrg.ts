@@ -1,8 +1,23 @@
 import type { ZodiacConfig } from '../config'
 import { ApiClient } from '../../api'
 import { invariant } from '@epic-web/invariant'
-import { Project, VariableDeclarationKind } from 'ts-morph'
-import { mkdirSync } from 'fs'
+import {
+  ModuleKind,
+  Project,
+  ScriptTarget,
+  VariableDeclarationKind,
+} from 'ts-morph'
+import { mkdirSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import { fileURLToPath } from 'url'
+
+function resolveNodeModulesDir(): string {
+  const selfPath = fileURLToPath(import.meta.url)
+  const match = selfPath.match(/^(.+[/\\]node_modules)[/\\]/)
+  if (match) return match[1]
+  // Fallback for development (running from source, not from node_modules)
+  return join(process.cwd(), 'node_modules')
+}
 
 const toLiteral = (value: unknown, indent = 0): string => {
   const pad = '  '.repeat(indent)
@@ -79,16 +94,6 @@ export const pullOrg = async (config: ZodiacConfig) => {
     }
   }
 
-  const cwd = process.cwd()
-  const typesDir = `${cwd}/.zodiac-os/types`
-
-  mkdirSync(typesDir, { recursive: true })
-
-  const project = new Project({ compilerOptions: { declaration: true } })
-  const sourceFile = project.createSourceFile(`${typesDir}/index.ts`, '', {
-    overwrite: true,
-  })
-
   const nameCount = new Map<string, number>()
   for (const user of users) {
     nameCount.set(user.fullName, (nameCount.get(user.fullName) ?? 0) + 1)
@@ -106,6 +111,38 @@ export const pullOrg = async (config: ZodiacConfig) => {
       personalSafes: user.personalSafes,
     }
   }
+
+  const outDir = join(resolveNodeModulesDir(), '.zodiac-os')
+
+  mkdirSync(outDir, { recursive: true })
+
+  // Write package.json so .zodiac-os is importable
+  writeFileSync(
+    join(outDir, 'package.json'),
+    JSON.stringify(
+      {
+        name: '.zodiac-os',
+        type: 'module',
+        main: 'index.js',
+        types: 'index.d.ts',
+      },
+      null,
+      2
+    )
+  )
+
+  // Use ts-morph to generate TS, then emit JS + d.ts
+  const project = new Project({
+    compilerOptions: {
+      declaration: true,
+      module: ModuleKind.ESNext,
+      target: ScriptTarget.ESNext,
+      outDir,
+    },
+    useInMemoryFileSystem: true,
+  })
+
+  const sourceFile = project.createSourceFile('index.ts', '')
 
   sourceFile.addVariableStatement({
     isExported: true,
@@ -129,5 +166,10 @@ export const pullOrg = async (config: ZodiacConfig) => {
     ],
   })
 
-  await sourceFile.save()
+  const emitResult = sourceFile.getEmitOutput()
+  for (const outputFile of emitResult.getOutputFiles()) {
+    const filePath = outputFile.getFilePath()
+    const fileName = filePath.includes('.d.ts') ? 'index.d.ts' : 'index.js'
+    writeFileSync(join(outDir, fileName), outputFile.getText())
+  }
 }

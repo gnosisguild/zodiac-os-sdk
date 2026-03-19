@@ -15,7 +15,6 @@ export const pullContracts = async (config: ZodiacConfig) => {
   const ethSdkConfig = createEthSdkConfig(
     defineConfig({
       contracts: config.contracts,
-      outputPath: `${cwd}/.zodiac-os/contracts`,
     })
   )
 
@@ -30,6 +29,4 @@ export const pullContracts = async (config: ZodiacConfig) => {
 
   console.log('Generating typed SDK...')
   await generateSdk(ctx)
-
-  console.log(`Contracts SDK generated to: .zodiac-os/contracts`)
 }

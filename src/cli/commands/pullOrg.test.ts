@@ -1,5 +1,5 @@
 import { describe, it, expect, mock, spyOn, afterEach } from 'bun:test'
-import { readFileSync, rmSync } from 'fs'
+import { readFileSync, rmSync, mkdirSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -45,8 +45,8 @@ const mockResolvedSafe = {
   modules: [],
 }
 
-mock.module('../internalApi', () => ({
-  InternalApiClient: class {
+mock.module('../../api', () => ({
+  ApiClient: class {
     listUsers() {
       return Promise.resolve(mockUsers)
     }
@@ -66,52 +66,30 @@ describe('pullOrg', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('writes users and vaults as named exports with as const', async () => {
+  it('writes JS and d.ts to node_modules/.zodiac-os/', async () => {
+    mkdirSync(tmpDir, { recursive: true })
     spyOn(process, 'cwd').mockReturnValue(tmpDir)
 
     const { pullOrg } = await import('./pullOrg')
     await pullOrg({ apiKey: 'zodiac_test-key' })
 
-    const output = readFileSync(
-      join(tmpDir, '.zodiac-os', 'types', 'index.ts'),
-      'utf-8'
-    )
+    const outDir = join(tmpDir, 'node_modules', '.zodiac-os')
 
-    expect(output).toBe(
-      `export const users = {
-      "Alice Example": {
-        id: "user-1",
-        fullName: "Alice Example",
-        personalSafes: {},
-      },
-      "Bob Example": {
-        id: "user-2",
-        fullName: "Bob Example",
-        personalSafes: {},
-      },
-    } as const;
-export const vaults = {
-      "Test Workspace": {
-        workspaceId: "ws-1",
-        workspaceName: "Test Workspace",
-        vaults: {
-          Treasury: {
-            id: "vault-1",
-            label: "Treasury",
-            address: "0xaaaa00000000000000000000000000000000aaaa",
-            chainId: 1,
-            threshold: 3,
-            owners: [
-              "0xbbbb00000000000000000000000000000000bbbb",
-              "0xcccc00000000000000000000000000000000cccc",
-              "0xdddd00000000000000000000000000000000dddd",
-            ],
-            modules: [],
-          },
-        },
-      },
-    } as const;
-`
-    )
+    // package.json is written
+    const pkg = JSON.parse(readFileSync(join(outDir, 'package.json'), 'utf-8'))
+    expect(pkg.name).toBe('.zodiac-os')
+    expect(pkg.type).toBe('module')
+
+    // JS file is written with proper exports
+    const js = readFileSync(join(outDir, 'index.js'), 'utf-8')
+    expect(js).toContain('export const users')
+    expect(js).toContain('export const vaults')
+    expect(js).toContain('"Alice Example"')
+    expect(js).toContain('Treasury')
+
+    // d.ts file is written
+    const dts = readFileSync(join(outDir, 'index.d.ts'), 'utf-8')
+    expect(dts).toContain('export declare const users')
+    expect(dts).toContain('export declare const vaults')
   })
 })
