@@ -1,5 +1,5 @@
 import type { ZodiacConfig } from '../config'
-import { InternalApiClient } from '../internalApi'
+import { ApiClient } from '../../api'
 import { invariant } from '@epic-web/invariant'
 import { Project, VariableDeclarationKind } from 'ts-morph'
 import { mkdirSync } from 'fs'
@@ -21,7 +21,8 @@ const toLiteral = (value: unknown, indent = 0): string => {
     const entries = Object.entries(value as Record<string, unknown>)
     if (entries.length === 0) return '{}'
     const props = entries.map(
-      ([k, v]) => `${childPad}${/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(k) ? k : JSON.stringify(k)}: ${toLiteral(v, indent + 1)}`
+      ([k, v]) =>
+        `${childPad}${/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(k) ? k : JSON.stringify(k)}: ${toLiteral(v, indent + 1)}`
     )
     return `{\n${props.join(',\n')},\n${pad}}`
   }
@@ -29,7 +30,7 @@ const toLiteral = (value: unknown, indent = 0): string => {
 }
 
 export const pullOrg = async (config: ZodiacConfig) => {
-  const client = new InternalApiClient({
+  const client = new ApiClient({
     apiKey: config.apiKey,
   })
 
