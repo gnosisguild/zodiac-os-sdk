@@ -9,25 +9,24 @@
     "url": "https://github.com/gnosisguild/zodiac-os-sdk"
   },
   "type": "module",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "exports": {
-    "types": "./dist/index.d.ts",
-    "import": "./dist/index.js"
+    "types": "./dist/index.d.mts",
+    "import": "./dist/index.mjs"
   },
   "files": [
     "dist",
-    "lib",
     "README.md",
     "LICENSE"
   ],
   "bin": {
-    "zodiac-os": "./lib/index.js"
+    "zodiac-os": "./dist/cli.mjs"
   },
   "scripts": {
-    "clean": "rimraf dist lib",
+    "clean": "rimraf dist",
     "prebuild": "bun clean",
-    "build": "tsup",
+    "build": "tsdown",
     "prepublishOnly": "bun run build",
     "check:format": "prettier --list-different .",
     "check:types": "tsc -p tsconfig.json",
@@ -39,7 +38,7 @@
     "@types/bun": "^1.2.21",
     "prettier": "^3.6.2",
     "rimraf": "^6.1.0",
-    "tsup": "^8.5.0",
+    "tsdown": "^0.21.4",
     "typescript": "^5.9.2"
   },
   "dependencies": {
