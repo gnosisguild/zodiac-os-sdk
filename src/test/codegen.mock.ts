@@ -3,7 +3,7 @@
 
 export const users = {
   'Alice Sample': {
-    id: 'user-a',
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     fullName: 'Alice Sample',
     personalSafes: {
       1: {
@@ -13,7 +13,7 @@ export const users = {
     },
   },
   'Bob Test': {
-    id: 'user-b',
+    id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
     fullName: 'Bob Test',
     personalSafes: {
       1: {
