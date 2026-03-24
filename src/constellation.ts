@@ -48,35 +48,49 @@ type ConstellationInternalOpts<C extends CodegenData> = {
 
 type Prettify<T> = { readonly [K in keyof T]: T[K] } & {}
 
-type NodeRef = Readonly<Record<string, any>>
-
 // Extract vault entries for a specific workspace
 type WorkspaceVaultEntries<
   C extends CodegenData,
   W extends keyof C['vaults'],
 > = C['vaults'][W]['vaults']
 
+type NewSafeProps = {
+  nonce: bigint
+  threshold: number
+  owners: readonly any[]
+  modules: readonly any[]
+}
+
+type NewRolesProps = {
+  nonce: bigint
+  target: any
+  threshold: number
+  owners: readonly any[]
+  modules: readonly any[]
+}
+
 type EntityAccessor<
   Type extends string,
   Entries extends Record<string, any>,
   Ch extends ChainId = ChainId,
+  NP extends Record<string, any> = Record<string, any>,
 > = {
   readonly [K in
     | (keyof Entries & string)
     | (string & {})]: K extends keyof Entries & string
-    ? <O extends Record<string, any> = {}>(
-        overrides?: { [P in Exclude<keyof Entries[K], 'id' | 'label'>]?: any } & {
-          [key: string & {}]: any
-        } & O
-      ) => Readonly<
-        Prettify<
-          Omit<Entries[K], keyof O> & O & { type: Type; label: K; chainId: Ch }
-        >
-      >
+    ? Readonly<Prettify<Entries[K] & { type: Type; label: K; chainId: Ch }>> &
+        (<O extends Record<string, any> = {}>(
+          overrides?: {
+            [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
+          } & O
+        ) => Readonly<
+          Prettify<
+            Omit<Entries[K], keyof O> &
+              O & { type: Type; label: K; chainId: Ch }
+          >
+        >)
     : <P extends Record<string, any>>(
-        props: { [Q in Exclude<keyof Entries[keyof Entries & string], 'id' | 'label' | 'address' | 'chainId'>]: any } & {
-          [key: string & {}]: any
-        } & P
+        props: NP & { [key: string & {}]: any } & P
       ) => Readonly<Prettify<P & { type: Type; label: string; chainId: Ch }>>
 }
 
@@ -90,10 +104,9 @@ type ConstellationResult<
   W extends keyof C['vaults'] = keyof C['vaults'],
   Ch extends ChainId = ChainId,
 > = {
-  safe: EntityAccessor<'SAFE', WorkspaceVaultEntries<C, W>, Ch>
-  roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>, Ch>
+  safe: EntityAccessor<'SAFE', WorkspaceVaultEntries<C, W>, Ch, NewSafeProps>
+  roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>, Ch, NewRolesProps>
   user: UserAccessor<C, Ch>
-  _nodes: NodeRef[]
 }
 
 function loadCodegen(): CodegenData {
@@ -110,7 +123,6 @@ export function constellation<
   internal?: ConstellationInternalOpts<C>
 ): ConstellationResult<C, W, Ch> {
   const codegen: CodegenData = internal?.codegen ?? loadCodegen()
-  const nodes: NodeRef[] = []
 
   const ws = codegen.vaults[opts.workspace]
   const vaultsByLabel: Record<string, Vault> = {}
@@ -120,10 +132,10 @@ export function constellation<
     }
   }
 
-  function makeNodeRef(data: Record<string, any>): NodeRef {
-    const ref = Object.freeze({ ...data, chain: opts.chainId })
-    nodes.push(ref)
-    return ref
+  function makeNodeRef(
+    data: Record<string, any>
+  ): Readonly<Record<string, any>> {
+    return Object.freeze({ ...data, chainId: opts.chainId })
   }
 
   function entityAccessor(
@@ -134,7 +146,7 @@ export function constellation<
       get(_target: any, name: string) {
         if (typeof name !== 'string') return undefined
         const existing = registry[name]
-        return (overrides?: Record<string, any>) => {
+        const fn = (overrides?: Record<string, any>) => {
           return makeNodeRef({
             type,
             ...(existing || {}),
@@ -142,6 +154,15 @@ export function constellation<
             label: name,
           })
         }
+        if (existing) {
+          Object.assign(fn, {
+            type,
+            ...existing,
+            label: name,
+            chainId: opts.chainId,
+          })
+        }
+        return fn
       },
     })
   }
@@ -169,6 +190,5 @@ export function constellation<
     safe: entityAccessor(vaultsByLabel, 'SAFE'),
     roles: entityAccessor(vaultsByLabel, 'ROLES'),
     user: userAccessor(),
-    _nodes: nodes,
   } as ConstellationResult<C, W, Ch>
 }

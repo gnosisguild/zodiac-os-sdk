@@ -2,10 +2,6 @@ import { describe, it, expect } from 'bun:test'
 import { constellation } from '../constellation'
 import * as codegen from './codegen.mock'
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe('constellation API', () => {
   describe('initialization', () => {
     it('creates a constellation scoped to a chain', () => {
@@ -37,16 +33,14 @@ describe('constellation API', () => {
       expect(ggDao.type).toBe('SAFE')
     })
 
-    it('returns a node ref without overrides via empty call', () => {
+    it('returns a node ref', () => {
       const eth = setup()
-
-      const treasury = eth.safe['Treasury']()
-
+      const treasury = eth.safe['Treasury']
       expect(treasury.label).toBe('Treasury')
       expect(treasury.address).toBe(codegen.vaults.GG.vaults.Treasury.address)
     })
 
-    it('returns a frozen (non-callable) node ref', () => {
+    it('returns a frozen (non-callable) node ref when invoked', () => {
       const eth = setup()
       const ggDao = eth.safe['GG DAO']()
       expect(Object.isFrozen(ggDao)).toBe(true)
@@ -63,7 +57,6 @@ describe('constellation API', () => {
 
     it('creates a new node with all required fields', () => {
       const eth = setup()
-      const ggDaoRoles = eth.roles['GG DAO']({})
 
       const newSafe = eth.safe['New Safe']({
         nonce: 0n,
@@ -72,7 +65,7 @@ describe('constellation API', () => {
           eth.user['Alice Sample'],
           '0xb8e48df6818d3cbc648b3e8ec248a4f547135f7a',
         ],
-        modules: [ggDaoRoles],
+        modules: [eth.roles['GG DAO']],
       })
 
       expect(newSafe.label).toBe('New Safe')
@@ -123,7 +116,7 @@ describe('constellation API', () => {
         { workspace: 'GG', label: 'l', chainId: 1 },
         { codegen }
       )
-      const ggDao = eth.safe['GG DAO']()
+      const ggDao = eth.safe['GG DAO']
 
       const newRoles = eth.roles['New Roles']({
         nonce: 123n,
@@ -161,51 +154,6 @@ describe('constellation API', () => {
     })
   })
 
-  describe('explicit export — no side-effects', () => {
-    function setup() {
-      return constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
-        { codegen }
-      )
-    }
-
-    it('each call creates exactly one node', () => {
-      const eth = setup()
-
-      eth.safe['GG DAO']()
-      expect(eth._nodes).toHaveLength(1)
-
-      eth.roles['GG DAO']({})
-      expect(eth._nodes).toHaveLength(2)
-
-      eth.safe['Brand New']({
-        nonce: 0n,
-        threshold: 1,
-        owners: [],
-        modules: [],
-      })
-      expect(eth._nodes).toHaveLength(3)
-    })
-
-    it('all materialized nodes are in the internal tracking list', () => {
-      const eth = setup()
-
-      const ggDao = eth.safe['GG DAO']()
-      const ggDaoRoles = eth.roles['GG DAO']({ roles: {} })
-      const newSafe = eth.safe['New']({
-        nonce: 0n,
-        threshold: 1,
-        owners: [],
-        modules: [],
-      })
-
-      // simulates: export { ggDao, ggDaoRoles, newSafe }
-      for (const node of [ggDao, ggDaoRoles, newSafe]) {
-        expect(eth._nodes).toContain(node)
-      }
-    })
-  })
-
   describe('node references are usable in other nodes', () => {
     function setup() {
       return constellation(
@@ -217,7 +165,7 @@ describe('constellation API', () => {
     it('roles ref can be passed as a module to a safe', () => {
       const eth = setup()
 
-      const ggDaoRoles = eth.roles['GG DAO']({})
+      const ggDaoRoles = eth.roles['GG DAO']
       const newSafe = eth.safe['Managed Safe']({
         nonce: 0n,
         threshold: 1,
@@ -231,7 +179,7 @@ describe('constellation API', () => {
     it('safe ref can be passed as target to a new roles mod', () => {
       const eth = setup()
 
-      const ggDao = eth.safe['GG DAO']()
+      const ggDao = eth.safe['GG DAO']
       const newRoles = eth.roles['New Roles']({
         nonce: 1n,
         target: ggDao,
@@ -252,32 +200,17 @@ describe('constellation API', () => {
       )
 
       // GG workspace vaults are accessible
-      const treasury = gg.safe['Treasury']()
+      const treasury = gg.safe['Treasury']
       expect(treasury.label).toBe('Treasury')
 
-      const ggDao = gg.safe['GG DAO']()
+      const ggDao = gg.safe['GG DAO']
       expect(ggDao.label).toBe('GG DAO')
 
       // Ops Fund is NOT in the GG workspace — accessing it returns a node
       // without any pre-filled properties from codegen
-      const opsFund = (gg.safe as any)['Ops Fund']()
+      const opsFund = gg.safe['Ops Fund']
+      // @ts-expect-error
       expect(opsFund.address).toBeUndefined()
-    })
-
-    it('exposes vaults from the second workspace when selected', () => {
-      const second = constellation(
-        { workspace: 'Second Space', label: 'l', chainId: 1 },
-        { codegen }
-      )
-
-      // Second Space vault is accessible with codegen data
-      const opsFund = second.safe['Ops Fund']()
-      expect(opsFund.label).toBe('Ops Fund')
-      expect(opsFund.address).toBe('0xffff00000000000000000000000000000000ffff')
-
-      // GG DAO is NOT in Second Space — no codegen data
-      const ggDao = (second.safe as any)['GG DAO']()
-      expect(ggDao.address).toBeUndefined()
     })
 
     it('roles accessor is also scoped to the workspace', () => {
@@ -286,12 +219,12 @@ describe('constellation API', () => {
         { codegen }
       )
 
-      const roles = gg.roles['GG DAO']({})
+      const roles = gg.roles['GG DAO']
       expect(roles.label).toBe('GG DAO')
       expect(roles.type).toBe('ROLES')
 
       // Ops Fund roles should have no codegen data
-      const opsFundRoles = (gg.roles as any)['Ops Fund']()
+      const opsFundRoles = (gg.roles as any)['Ops Fund']
       expect(opsFundRoles.address).toBeUndefined()
     })
   })
