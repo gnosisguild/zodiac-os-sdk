@@ -61,19 +61,23 @@ type EntityAccessor<
   Entries extends Record<string, any>,
   Ch extends ChainId = ChainId,
 > = {
-  readonly [K in keyof Entries & string]: <O extends Record<string, any> = {}>(
-    overrides?: { [P in Exclude<keyof Entries[K], 'id' | 'label'>]?: any } & {
-      [key: string & {}]: any
-    } & O
-  ) => Readonly<
-    Prettify<
-      Omit<Entries[K], keyof O> & O & { type: Type; label: K; chainId: Ch }
-    >
-  >
-} & {
-  new: <P extends Record<string, any>>(
-    props: P
-  ) => Readonly<Prettify<P & { type: Type; chainId: Ch }>>
+  readonly [K in
+    | (keyof Entries & string)
+    | (string & {})]: K extends keyof Entries & string
+    ? <O extends Record<string, any> = {}>(
+        overrides?: { [P in Exclude<keyof Entries[K], 'id' | 'label'>]?: any } & {
+          [key: string & {}]: any
+        } & O
+      ) => Readonly<
+        Prettify<
+          Omit<Entries[K], keyof O> & O & { type: Type; label: K; chainId: Ch }
+        >
+      >
+    : <P extends Record<string, any>>(
+        props: { [Q in Exclude<keyof Entries[keyof Entries & string], 'id' | 'label' | 'address' | 'chainId'>]: any } & {
+          [key: string & {}]: any
+        } & P
+      ) => Readonly<Prettify<P & { type: Type; label: string; chainId: Ch }>>
 }
 
 type UserAccessor<C extends CodegenData, Ch extends number> = {
@@ -126,14 +130,9 @@ export function constellation<
     registry: Record<string, Record<string, any>>,
     type: string
   ) {
-    const create = (props: Record<string, any>) => {
-      return makeNodeRef({ type, ...props })
-    }
-
     return new Proxy({} as Record<string, any>, {
       get(_target: any, name: string) {
         if (typeof name !== 'string') return undefined
-        if (name === 'new') return create
         const existing = registry[name]
         return (overrides?: Record<string, any>) => {
           return makeNodeRef({
