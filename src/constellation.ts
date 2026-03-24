@@ -54,19 +54,22 @@ type WorkspaceVaultEntries<
   W extends keyof C['vaults'],
 > = C['vaults'][W]['vaults']
 
+type NodeType = 'SAFE' | 'ROLES'
+type NodeRef = Readonly<{ type: NodeType; label: string; chainId: ChainId }>
+
+type AddressOrRef = Lowercase<Address> | NodeRef
+
 type NewSafeProps = {
   nonce: bigint
   threshold: number
-  owners: readonly any[]
-  modules: readonly any[]
+  owners: readonly AddressOrRef[]
+  modules: readonly AddressOrRef[]
 }
 
 type NewRolesProps = {
   nonce: bigint
-  target: any
-  threshold: number
-  owners: readonly any[]
-  modules: readonly any[]
+  target: AddressOrRef
+  modules: readonly AddressOrRef[]
 }
 
 type EntityAccessor<
@@ -79,10 +82,8 @@ type EntityAccessor<
     | (keyof Entries & string)
     | (string & {})]: K extends keyof Entries & string
     ? Readonly<Prettify<Entries[K] & { type: Type; label: K; chainId: Ch }>> &
-        (<O extends Record<string, any> = {}>(
-          overrides?: {
-            [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } & O
+        (<O extends { [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any } = {}>(
+          overrides?: { [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any } & O
         ) => Readonly<
           Prettify<
             Omit<Entries[K], keyof O> &

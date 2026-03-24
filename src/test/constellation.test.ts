@@ -23,6 +23,13 @@ describe('constellation API', () => {
       )
     }
 
+    it('returns a node ref', () => {
+      const eth = setup()
+      const treasury = eth.safe['Treasury']
+      expect(treasury.label).toBe('Treasury')
+      expect(treasury.address).toBe(codegen.vaults.GG.vaults.Treasury.address)
+    })
+
     it('returns a node ref with existing properties merged with overrides', () => {
       const eth = setup()
       const ggDao = eth.safe['GG DAO']({ threshold: 5 })
@@ -33,17 +40,20 @@ describe('constellation API', () => {
       expect(ggDao.type).toBe('SAFE')
     })
 
-    it('returns a node ref', () => {
-      const eth = setup()
-      const treasury = eth.safe['Treasury']
-      expect(treasury.label).toBe('Treasury')
-      expect(treasury.address).toBe(codegen.vaults.GG.vaults.Treasury.address)
-    })
-
     it('returns a frozen (non-callable) node ref when invoked', () => {
       const eth = setup()
       const ggDao = eth.safe['GG DAO']()
       expect(Object.isFrozen(ggDao)).toBe(true)
+    })
+
+    it('rejects overriding id, label, or unknown props', () => {
+      const eth = setup()
+      // @ts-expect-error — id is not overridable
+      eth.safe['GG DAO']({ id: 'fake-id' })
+      // @ts-expect-error — label is not overridable
+      eth.safe['GG DAO']({ label: 'fake-label' })
+      // @ts-expect-error — unknown prop is not allowed
+      eth.safe['GG DAO']({ unknown: 'this does not exist' })
     })
   })
 
@@ -84,6 +94,12 @@ describe('constellation API', () => {
       })
       expect(Object.isFrozen(newSafe)).toBe(true)
     })
+
+    it('rejects new node with missing required props', () => {
+      const eth = setup()
+      // @ts-expect-error — missing threshold, owners, modules
+      eth.safe['Brand New']({ nonce: 0n })
+    })
   })
 
   describe('existing roles — bracket access', () => {
@@ -93,20 +109,10 @@ describe('constellation API', () => {
         { codegen }
       )
 
-      const mockRole = {
-        members: [
-          '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' as `0x${string}`,
-        ],
-        permissions: [],
-      }
-
-      const ggDaoRoles = eth.roles['GG DAO']({
-        roles: { eth_wrapping: mockRole },
-      })
+      const ggDaoRoles = eth.roles['GG DAO']
 
       expect(ggDaoRoles.label).toBe('GG DAO')
       expect(ggDaoRoles.type).toBe('ROLES')
-      expect(ggDaoRoles.roles).toEqual({ eth_wrapping: mockRole })
     })
   })
 
@@ -148,9 +154,8 @@ describe('constellation API', () => {
 
     it('throws for unknown users', () => {
       const eth = setup()
-      expect(() => (eth.user as any)['unknown@example.com']).toThrow(
-        'Unknown user'
-      )
+      // @ts-expect-error static check already warns
+      expect(() => eth.user['Does not exist']).toThrow('Unknown user')
     })
   })
 
@@ -224,7 +229,7 @@ describe('constellation API', () => {
       expect(roles.type).toBe('ROLES')
 
       // Ops Fund roles should have no codegen data
-      const opsFundRoles = (gg.roles as any)['Ops Fund']
+      const opsFundRoles = gg.roles['Ops Fund']
       expect(opsFundRoles.address).toBeUndefined()
     })
   })
