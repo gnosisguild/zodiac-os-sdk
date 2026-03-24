@@ -2,15 +2,18 @@
 // When `pull-org` has been run, node_modules/.zodiac-os/index.d.ts
 // provides narrow `as const` types that take precedence over this.
 declare module '.zodiac-os' {
+  import { Address, ChainId } from '@zodiac-os/api-types'
+  import { UUID } from 'crypto'
+
   export const users: Readonly<
     Record<
       string,
       {
-        id: string
+        id: UUID
         fullName: string
         personalSafes: Record<
           number,
-          { address: string; active: boolean }
+          { address: Lowercase<Address>; active: boolean }
         >
       }
     >
@@ -20,16 +23,16 @@ declare module '.zodiac-os' {
     Record<
       string,
       {
-        workspaceId: string
+        workspaceId: UUID
         workspaceName: string
         vaults: Readonly<
           Record<
             string,
             {
-              id: string
+              id: UUID
               label: string
-              address: string
-              chainId: number
+              address: Lowercase<Address>
+              chainId: ChainId
               threshold: number
               owners: readonly string[]
               modules: readonly string[]

@@ -26,11 +26,11 @@ export const users = {
 
 export const vaults = {
   GG: {
-    workspaceId: 'ws-1',
+    workspaceId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     workspaceName: 'GG',
     vaults: {
       'GG DAO': {
-        id: 'vault-1',
+        id: '11111111-1111-1111-1111-111111111111',
         label: 'GG DAO',
         address: '0xcccc00000000000000000000000000000000cccc',
         chainId: 1,
@@ -43,7 +43,7 @@ export const vaults = {
         modules: [],
       },
       Treasury: {
-        id: 'vault-2',
+        id: '22222222-2222-2222-2222-222222222222',
         label: 'Treasury',
         address: '0xeeee00000000000000000000000000000000eeee',
         chainId: 1,
@@ -57,11 +57,11 @@ export const vaults = {
     },
   },
   'Second Space': {
-    workspaceId: 'ws-2',
+    workspaceId: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     workspaceName: 'Second Space',
     vaults: {
       'Ops Fund': {
-        id: 'vault-3',
+        id: '33333333-3333-3333-3333-333333333333',
         label: 'Ops Fund',
         address: '0xffff00000000000000000000000000000000ffff',
         chainId: 1,

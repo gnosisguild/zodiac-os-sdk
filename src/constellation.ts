@@ -1,7 +1,8 @@
 /// <reference path="./zodiac-os-codegen.d.ts" />
-import { ChainId } from '@zodiac-os/api-types'
+import { Address, ChainId } from '@zodiac-os/api-types'
 import { createRequire } from 'module'
 import type * as ZodiacOsCodegen from '.zodiac-os'
+import { UUID } from 'crypto'
 
 type User = {
   id: string
@@ -10,17 +11,17 @@ type User = {
 }
 
 type Vault = {
-  id: string
+  id: UUID
   label: string
-  address: string
-  chainId: number
+  address: Lowercase<Address>
+  chainId: ChainId
   threshold: number
   owners: readonly string[]
   modules: readonly string[]
 }
 
 type WorkspaceVaults = {
-  workspaceId: string
+  workspaceId: UUID
   workspaceName: string
   vaults: Readonly<Record<string, Vault>>
 }
@@ -38,12 +39,14 @@ type GeneratedCodegen = {
 type ConstellationOpts<C extends CodegenData> = {
   workspace: keyof C['vaults'] & string
   label: string
-  chain: ChainId
+  chainId: ChainId
 }
 
 type ConstellationInternalOpts<C extends CodegenData> = {
   codegen?: C
 }
+
+type Prettify<T> = { readonly [K in keyof T]: T[K] } & {}
 
 type NodeRef = Readonly<Record<string, any>>
 
@@ -56,29 +59,36 @@ type WorkspaceVaultEntries<
 type EntityAccessor<
   Type extends string,
   Entries extends Record<string, any>,
+  Ch extends ChainId = ChainId,
 > = {
-  readonly [K in keyof Entries & string]: <
-    O extends Record<string, any> = {},
-  >(
-    overrides?: O
-  ) => Readonly<Entries[K] & O & { type: Type; label: K; __chain: number }>
+  readonly [K in keyof Entries & string]: <O extends Record<string, any> = {}>(
+    overrides?: { [P in Exclude<keyof Entries[K], 'id' | 'label'>]?: any } & {
+      [key: string & {}]: any
+    } & O
+  ) => Readonly<
+    Prettify<
+      Omit<Entries[K], keyof O> & O & { type: Type; label: K; chainId: Ch }
+    >
+  >
 } & {
   new: <P extends Record<string, any>>(
     props: P
-  ) => Readonly<P & { type: Type; __chain: number }>
+  ) => Readonly<Prettify<P & { type: Type; chainId: Ch }>>
 }
 
-type UserAccessor<Handles extends string> = {
-  readonly [K in Handles]: string
+type UserAccessor<C extends CodegenData, Ch extends number> = {
+  readonly [K in keyof C['users'] &
+    string]: C['users'][K]['personalSafes'][Ch]['address']
 }
 
 type ConstellationResult<
   C extends CodegenData,
   W extends keyof C['vaults'] = keyof C['vaults'],
+  Ch extends ChainId = ChainId,
 > = {
-  safe: EntityAccessor<'SAFE', WorkspaceVaultEntries<C, W>>
-  roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>>
-  user: UserAccessor<keyof C['users'] & string>
+  safe: EntityAccessor<'SAFE', WorkspaceVaultEntries<C, W>, Ch>
+  roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>, Ch>
+  user: UserAccessor<C, Ch>
   _nodes: NodeRef[]
 }
 
@@ -90,10 +100,11 @@ function loadCodegen(): CodegenData {
 export function constellation<
   const C extends CodegenData = GeneratedCodegen,
   const W extends keyof C['vaults'] & string = keyof C['vaults'] & string,
+  const Ch extends ChainId = ChainId,
 >(
-  opts: ConstellationOpts<C> & { workspace: W },
+  opts: ConstellationOpts<C> & { workspace: W; chainId: Ch },
   internal?: ConstellationInternalOpts<C>
-): ConstellationResult<C, W> {
+): ConstellationResult<C, W, Ch> {
   const codegen: CodegenData = internal?.codegen ?? loadCodegen()
   const nodes: NodeRef[] = []
 
@@ -106,7 +117,7 @@ export function constellation<
   }
 
   function makeNodeRef(data: Record<string, any>): NodeRef {
-    const ref = Object.freeze({ ...data, __chain: opts.chain })
+    const ref = Object.freeze({ ...data, chain: opts.chainId })
     nodes.push(ref)
     return ref
   }
@@ -143,10 +154,10 @@ export function constellation<
         get(_target: any, name: string) {
           const user = codegen.users[name]
           if (!user) throw new Error(`Unknown user: ${name}`)
-          const personalSafe = user.personalSafes[opts.chain]
+          const personalSafe = user.personalSafes[opts.chainId]
           if (!personalSafe) {
             throw new Error(
-              `User ${name} has no personal safe on chain ${opts.chain}`
+              `User ${name} has no personal safe on chain ${opts.chainId}`
             )
           }
           return personalSafe.address
@@ -160,5 +171,5 @@ export function constellation<
     roles: entityAccessor(vaultsByLabel, 'ROLES'),
     user: userAccessor(),
     _nodes: nodes,
-  } as ConstellationResult<C>
+  } as ConstellationResult<C, W, Ch>
 }
