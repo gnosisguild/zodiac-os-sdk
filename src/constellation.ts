@@ -54,7 +54,7 @@ type WorkspaceVaultEntries<
   W extends keyof C['vaults'],
 > = C['vaults'][W]['vaults']
 
-type NodeType = 'SAFE' | 'ROLES'
+type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 type NodeRef = Readonly<{ type: NodeType; label: string; chainId: ChainId }>
 
 type AddressOrRef = Lowercase<Address> | NodeRef
@@ -64,12 +64,17 @@ type NewSafeProps = {
   threshold: number
   owners: readonly AddressOrRef[]
   modules: readonly AddressOrRef[]
+  vault?: boolean
 }
 
 type NewRolesProps = {
   nonce: bigint
+  owner: AddressOrRef
   target: AddressOrRef
-  modules: readonly AddressOrRef[]
+  avatar: AddressOrRef
+  multisend?: readonly Lowercase<Address>[]
+  roles?: readonly Record<string, any>[]
+  allowances?: readonly Record<string, any>[]
 }
 
 type EntityAccessor<

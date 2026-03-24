@@ -126,10 +126,9 @@ describe('constellation API', () => {
 
       const newRoles = eth.roles['New Roles']({
         nonce: 123n,
+        owner: ggDao,
         target: ggDao,
-        threshold: 1,
-        owners: [eth.user['Alice Sample']],
-        modules: [],
+        avatar: ggDao,
       })
 
       expect(newRoles.type).toBe('ROLES')
@@ -187,10 +186,9 @@ describe('constellation API', () => {
       const ggDao = eth.safe['GG DAO']
       const newRoles = eth.roles['New Roles']({
         nonce: 1n,
+        owner: ggDao,
         target: ggDao,
-        threshold: 1,
-        owners: [eth.user['Alice Sample']],
-        modules: [],
+        avatar: ggDao,
       })
 
       expect(newRoles.target).toBe(ggDao)
@@ -230,6 +228,7 @@ describe('constellation API', () => {
 
       // Ops Fund roles should have no codegen data
       const opsFundRoles = gg.roles['Ops Fund']
+      // @ts-expect-error
       expect(opsFundRoles.address).toBeUndefined()
     })
   })
