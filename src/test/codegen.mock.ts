@@ -33,7 +33,7 @@ export const vaults = {
         id: '11111111-1111-1111-1111-111111111111',
         label: 'GG DAO',
         address: '0xcccc00000000000000000000000000000000cccc',
-        chainId: 1,
+        chain: 1,
         threshold: 3,
         owners: [
           '0xaaaa00000000000000000000000000000000aaaa',
@@ -46,7 +46,7 @@ export const vaults = {
         id: '22222222-2222-2222-2222-222222222222',
         label: 'Treasury',
         address: '0xeeee00000000000000000000000000000000eeee',
-        chainId: 1,
+        chain: 1,
         threshold: 2,
         owners: [
           '0xaaaa00000000000000000000000000000000aaaa',
@@ -64,7 +64,7 @@ export const vaults = {
         id: '33333333-3333-3333-3333-333333333333',
         label: 'Ops Fund',
         address: '0xffff00000000000000000000000000000000ffff',
-        chainId: 1,
+        chain: 1,
         threshold: 1,
         owners: ['0xaaaa00000000000000000000000000000000aaaa'],
         modules: [],

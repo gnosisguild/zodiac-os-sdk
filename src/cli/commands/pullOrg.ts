@@ -61,7 +61,7 @@ export const pullOrg = async (config: ZodiacConfig) => {
     {
       specification: allRawVaults.map((vault) => ({
         type: 'SAFE',
-        chain: vault.chainId,
+        chain: vault.chain,
         address: vault.address,
       })),
     }
@@ -81,7 +81,7 @@ export const pullOrg = async (config: ZodiacConfig) => {
         id: vault.id,
         label: vault.label,
         address: account.address,
-        chainId: vault.chainId,
+        chain: vault.chain,
         threshold: account.threshold,
         owners: [...account.owners],
         modules: [...account.modules],

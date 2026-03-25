@@ -15,7 +15,7 @@ const wsId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' as any
 describe('apply', () => {
   function setup() {
     return constellation(
-      { workspace: 'GG', label: 'test', chainId: 1 },
+      { workspace: 'GG', label: 'test', chain: 1 },
       { codegen }
     )
   }
@@ -31,7 +31,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([roles], { label: 'test', chainId: 1, workspaceId: wsId, api })
+    await apply([roles], { label: 'test', chain: 1, workspaceId: wsId, api })
 
     const spec = lastPayload().specification[0]
     expect(spec.target).toBe('$gg dao')
@@ -39,24 +39,12 @@ describe('apply', () => {
     expect(spec.avatar).toBe('$gg dao')
   })
 
-  it('maps chainId to chain in the spec', async () => {
-    const eth = setup()
-    const dao = eth.safe['GG DAO']
-
-    const { api, lastPayload } = mockApi()
-    await apply([dao], { label: 'test', chainId: 1, workspaceId: wsId, api })
-
-    const spec = lastPayload().specification[0]
-    expect(spec.chain).toBe(1)
-    expect(spec.chainId).toBeUndefined()
-  })
-
   it('sets ref from label lowercased', async () => {
     const eth = setup()
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { label: 'test', chainId: 1, workspaceId: wsId, api })
+    await apply([dao], { label: 'test', chain: 1, workspaceId: wsId, api })
 
     const spec = lastPayload().specification[0]
     expect(spec.ref).toBe('gg dao')
@@ -73,7 +61,12 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([newSafe], { label: 'test', chainId: 1, workspaceId: wsId, api })
+    await apply([newSafe], {
+      label: 'test',
+      chain: 1,
+      workspaceId: wsId,
+      api,
+    })
 
     const spec = lastPayload().specification[0]
     expect(spec.nonce).toBe('42')
@@ -92,7 +85,12 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([newSafe], { label: 'test', chainId: 1, workspaceId: wsId, api })
+    await apply([newSafe], {
+      label: 'test',
+      chain: 1,
+      workspaceId: wsId,
+      api,
+    })
 
     const spec = lastPayload().specification[0]
     expect(spec.owners).toEqual([
@@ -107,21 +105,26 @@ describe('apply', () => {
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { label: 'test', chainId: 1, workspaceId: wsId, api })
+    await apply([dao], { label: 'test', chain: 1, workspaceId: wsId, api })
 
     const spec = lastPayload().specification[0]
     expect(spec.id).toBeUndefined()
   })
 
-  it('passes label and chainId at the payload level', async () => {
+  it('passes label and chain at the payload level', async () => {
     const eth = setup()
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { label: 'my constellation', chainId: 1, workspaceId: wsId, api })
+    await apply([dao], {
+      label: 'my constellation',
+      chain: 1,
+      workspaceId: wsId,
+      api,
+    })
 
     const payload = lastPayload()
     expect(payload.label).toBe('my constellation')
-    expect(payload.chainId).toBe(1)
+    expect(payload.chain).toBe(1)
   })
 })

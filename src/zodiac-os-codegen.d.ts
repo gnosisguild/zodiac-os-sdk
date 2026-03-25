@@ -32,7 +32,7 @@ declare module '.zodiac-os' {
               id: UUID
               label: string
               address: Lowercase<Address>
-              chainId: ChainId
+              chain: ChainId
               threshold: number
               owners: readonly string[]
               modules: readonly string[]

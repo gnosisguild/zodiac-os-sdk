@@ -5,23 +5,23 @@ import type { ApiClient } from './api'
 type NodeLike = Readonly<Record<string, any>> & {
   type: string
   label: string
-  chainId: number
+  chain: number
 }
 
 /**
  * Resolves node references and applies the constellation specification via the API.
  *
- * Converts `NodeRef` objects to `$ref` strings, maps `chainId` to `chain`,
- * and serializes bigint values as required by the API.
+ * Converts `NodeRef` objects to `$ref` strings and serializes bigint values
+ * as required by the API.
  *
  * ```ts
- * const eth = constellation({ workspace: 'GG', label: 'my constellation', chainId: 1 })
+ * const eth = constellation({ workspace: 'GG', label: 'my constellation', chain: 1 })
  * const dao = eth.safe['GG DAO']
  * const roles = eth.roles['New Roles']({ nonce: 0n, target: dao, owner: dao, avatar: dao })
  *
  * await apply([dao, roles], {
  *   label: 'my constellation',
- *   chainId: 1,
+ *   chain: 1,
  *   workspaceId: 'ws-id',
  *   api: client,
  * })
@@ -29,29 +29,27 @@ type NodeLike = Readonly<Record<string, any>> & {
  */
 export async function apply(
   nodes: NodeLike[],
-  opts: { label: string; chainId: ChainId; workspaceId: UUID; api: ApiClient }
+  opts: { label: string; chain: ChainId; workspaceId: UUID; api: ApiClient }
 ): Promise<ApplyConstellationResult> {
   const specification = nodes.map(
     nodeToSpec
   ) as ApplyConstellationPayload['specification']
   return opts.api.applyConstellation(opts.workspaceId, {
     label: opts.label,
-    chainId: opts.chainId,
+    chain: opts.chain,
     specification,
   })
 }
 
 function nodeToSpec(node: NodeLike): Record<string, any> {
-  const { chainId, label, id, ...rest } = node as Record<string, any>
+  const { id, ...rest } = node as Record<string, any>
   const spec: Record<string, any> = {}
 
   for (const [key, value] of Object.entries(rest)) {
     spec[key] = resolveValue(value)
   }
 
-  spec.chain = chainId
-  spec.label = label
-  spec.ref = label.toLowerCase()
+  spec.ref = spec.label.toLowerCase()
 
   if (spec.nonce != null && typeof spec.nonce === 'bigint') {
     spec.nonce = spec.nonce.toString()
@@ -80,14 +78,14 @@ function resolveValue(value: unknown): unknown {
   return value
 }
 
-function isNodeRef(value: unknown): value is { type: string; label: string; chainId: number } {
+function isNodeRef(value: unknown): value is { type: string; label: string; chain: number } {
   if (typeof value === 'function' || typeof value === 'object') {
     const obj = value as any
     return (
       obj != null &&
       typeof obj.type === 'string' &&
       typeof obj.label === 'string' &&
-      typeof obj.chainId === 'number'
+      typeof obj.chain === 'number'
     )
   }
   return false

@@ -6,7 +6,7 @@ describe('constellation API', () => {
   describe('initialization', () => {
     it('creates a constellation scoped to a chain', () => {
       const eth = constellation(
-        { workspace: 'GG', label: 'My Test Constellation', chainId: 1 },
+        { workspace: 'GG', label: 'My Test Constellation', chain: 1 },
         { codegen }
       )
       expect(eth.safe).toBeDefined()
@@ -18,7 +18,7 @@ describe('constellation API', () => {
   describe('existing safe — bracket access', () => {
     function setup() {
       return constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -60,7 +60,7 @@ describe('constellation API', () => {
   describe('new safe — bracket access with new key', () => {
     function setup() {
       return constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -105,7 +105,7 @@ describe('constellation API', () => {
   describe('existing roles — bracket access', () => {
     it('returns canonical roles mod with config applied', () => {
       const eth = constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
 
@@ -119,7 +119,7 @@ describe('constellation API', () => {
   describe('new roles — bracket access with new key', () => {
     it('creates a new roles mod with explicit target', () => {
       const eth = constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
       const ggDao = eth.safe['GG DAO']
@@ -140,7 +140,7 @@ describe('constellation API', () => {
   describe('user accessor', () => {
     function setup() {
       return constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -161,7 +161,7 @@ describe('constellation API', () => {
   describe('node references are usable in other nodes', () => {
     function setup() {
       return constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
     }
@@ -198,7 +198,7 @@ describe('constellation API', () => {
   describe('workspace scoping', () => {
     it('only exposes vaults from the selected workspace', () => {
       const gg = constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
 
@@ -218,7 +218,7 @@ describe('constellation API', () => {
 
     it('roles accessor is also scoped to the workspace', () => {
       const gg = constellation(
-        { workspace: 'GG', label: 'l', chainId: 1 },
+        { workspace: 'GG', label: 'l', chain: 1 },
         { codegen }
       )
 

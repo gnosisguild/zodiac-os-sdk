@@ -17,7 +17,7 @@ type Vault = {
   id: UUID
   label: string
   address: Lowercase<Address>
-  chainId: ChainId
+  chain: ChainId
   threshold: number
   owners: readonly string[]
   modules: readonly string[]
@@ -46,7 +46,7 @@ type ConstellationOpts<C extends CodegenData> = {
   /** Human-readable label for this constellation. */
   label: string
   /** Target chain for all nodes in this constellation. */
-  chainId: ChainId
+  chain: ChainId
 }
 
 type ConstellationInternalOpts<C extends CodegenData> = {
@@ -64,7 +64,7 @@ type WorkspaceVaultEntries<
 type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 
 /** A frozen reference to a node in the constellation. */
-type NodeRef = Readonly<{ type: NodeType; label: string; chainId: ChainId }>
+type NodeRef = Readonly<{ type: NodeType; label: string; chain: ChainId }>
 
 /** An blockchain address or a reference to another node in the constellation. */
 type AddressOrRef = Lowercase<Address> | NodeRef
@@ -108,7 +108,7 @@ type EntityAccessor<
   readonly [K in
     | (keyof Entries & string)
     | (string & {})]: K extends keyof Entries & string
-    ? Readonly<Prettify<Entries[K] & { type: Type; label: K; chainId: Ch }>> &
+    ? Readonly<Prettify<Entries[K] & { type: Type; label: K; chain: Ch }>> &
         (<
           O extends {
             [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
@@ -120,12 +120,12 @@ type EntityAccessor<
         ) => Readonly<
           Prettify<
             Omit<Entries[K], keyof O> &
-              O & { type: Type; label: K; chainId: Ch }
+              O & { type: Type; label: K; chain: Ch }
           >
         >)
     : <P extends Record<string, any>>(
         props: NP & { [key: string & {}]: any } & P
-      ) => Readonly<Prettify<P & { type: Type; label: string; chainId: Ch }>>
+      ) => Readonly<Prettify<P & { type: Type; label: string; chain: Ch }>>
 }
 
 type UserAccessor<C extends CodegenData, Ch extends number> = {
@@ -156,7 +156,7 @@ function loadCodegen(): CodegenData {
  *
  * Use bracket access to reference existing vaults or define new nodes:
  * ```ts
- * const eth = constellation({ workspace: 'GG', label: 'my constellation', chainId: 1 })
+ * const eth = constellation({ workspace: 'GG', label: 'my constellation', chain: 1 })
  *
  * const dao = eth.safe['GG DAO']              // existing vault ref
  * const roles = eth.roles['GG DAO']           // existing roles ref
@@ -168,7 +168,7 @@ export function constellation<
   const W extends keyof C['vaults'] & string = keyof C['vaults'] & string,
   const Ch extends ChainId = ChainId,
 >(
-  opts: ConstellationOpts<C> & { workspace: W; chainId: Ch },
+  opts: ConstellationOpts<C> & { workspace: W; chain: Ch },
   internal?: ConstellationInternalOpts<C>
 ): ConstellationResult<C, W, Ch> {
   const codegen: CodegenData = internal?.codegen ?? loadCodegen()
@@ -184,7 +184,7 @@ export function constellation<
   function makeNodeRef(
     data: Record<string, any>
   ): Readonly<Record<string, any>> {
-    return Object.freeze({ ...data, chainId: opts.chainId })
+    return Object.freeze({ ...data, chainId: opts.chain })
   }
 
   function entityAccessor(
@@ -208,7 +208,7 @@ export function constellation<
             type,
             ...existing,
             label: name,
-            chainId: opts.chainId,
+            chainId: opts.chain,
           })
         }
         return fn
@@ -223,10 +223,10 @@ export function constellation<
         get(_target: any, name: string) {
           const user = codegen.users[name]
           if (!user) throw new Error(`Unknown user: ${name}`)
-          const personalSafe = user.personalSafes[opts.chainId]
+          const personalSafe = user.personalSafes[opts.chain]
           if (!personalSafe) {
             throw new Error(
-              `User ${name} has no personal safe on chain ${opts.chainId}`
+              `User ${name} has no personal safe on chain ${opts.chain}`
             )
           }
           return personalSafe.address
