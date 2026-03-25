@@ -119,8 +119,7 @@ type EntityAccessor<
           } & O
         ) => Readonly<
           Prettify<
-            Omit<Entries[K], keyof O> &
-              O & { type: Type; label: K; chain: Ch }
+            Omit<Entries[K], keyof O> & O & { type: Type; label: K; chain: Ch }
           >
         >)
     : <P extends Record<string, any>>(
@@ -144,6 +143,13 @@ type ConstellationResult<
   roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>, Ch, NewRolesProps>
   /** Resolve a user's personal safe address on the constellation's chain. */
   user: UserAccessor<C, Ch>
+}
+
+/** @internal */
+export type ConstellationMeta = {
+  label: string
+  chain: ChainId
+  workspaceId: UUID
 }
 
 function loadCodegen(): CodegenData {
@@ -181,10 +187,17 @@ export function constellation<
     }
   }
 
+  const meta: ConstellationMeta = {
+    label: opts.label,
+    chain: opts.chain,
+    workspaceId: (ws?.workspaceId ?? '') as UUID,
+  }
+
   function makeNodeRef(
     data: Record<string, any>
   ): Readonly<Record<string, any>> {
-    return Object.freeze({ ...data, chainId: opts.chain })
+    const ref = Object.freeze({ ...data, chain: opts.chain, _constellation: meta })
+    return ref
   }
 
   function entityAccessor(
@@ -208,7 +221,8 @@ export function constellation<
             type,
             ...existing,
             label: name,
-            chainId: opts.chain,
+            chain: opts.chain,
+            _constellation: meta,
           })
         }
         return fn

@@ -10,8 +10,6 @@ function mockApi() {
   return { api, lastPayload }
 }
 
-const wsId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' as any
-
 describe('apply', () => {
   function setup() {
     return constellation(
@@ -31,7 +29,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([roles], { label: 'test', chain: 1, workspaceId: wsId, api })
+    await apply([roles], { api })
 
     const spec = lastPayload().specification[0]
     expect(spec.target).toBe('$gg dao')
@@ -44,7 +42,7 @@ describe('apply', () => {
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { label: 'test', chain: 1, workspaceId: wsId, api })
+    await apply([dao], { api })
 
     const spec = lastPayload().specification[0]
     expect(spec.ref).toBe('gg dao')
@@ -61,12 +59,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([newSafe], {
-      label: 'test',
-      chain: 1,
-      workspaceId: wsId,
-      api,
-    })
+    await apply([newSafe], { api })
 
     const spec = lastPayload().specification[0]
     expect(spec.nonce).toBe('42')
@@ -85,12 +78,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([newSafe], {
-      label: 'test',
-      chain: 1,
-      workspaceId: wsId,
-      api,
-    })
+    await apply([newSafe], { api })
 
     const spec = lastPayload().specification[0]
     expect(spec.owners).toEqual([
@@ -105,23 +93,21 @@ describe('apply', () => {
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { label: 'test', chain: 1, workspaceId: wsId, api })
+    await apply([dao], { api })
 
     const spec = lastPayload().specification[0]
     expect(spec.id).toBeUndefined()
   })
 
-  it('passes label and chain at the payload level', async () => {
-    const eth = setup()
+  it('passes label and chain from constellation metadata', async () => {
+    const eth = constellation(
+      { workspace: 'GG', label: 'my constellation', chain: 1 },
+      { codegen }
+    )
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], {
-      label: 'my constellation',
-      chain: 1,
-      workspaceId: wsId,
-      api,
-    })
+    await apply([dao], { api })
 
     const payload = lastPayload()
     expect(payload.label).toBe('my constellation')

@@ -9,6 +9,7 @@ describe('constellation API', () => {
         { workspace: 'GG', label: 'My Test Constellation', chain: 1 },
         { codegen }
       )
+
       expect(eth.safe).toBeDefined()
       expect(eth.roles).toBeDefined()
       expect(eth.user).toBeDefined()
