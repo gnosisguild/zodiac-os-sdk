@@ -63,11 +63,45 @@ type WorkspaceVaultEntries<
 
 type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 
-/** A frozen reference to a node in the constellation. */
+/** A reference to a node used in `owners`, `modules`, `target`, etc. */
 type NodeRef = Readonly<{ type: NodeType; label: string; chain: ChainId }>
 
-/** An blockchain address or a reference to another node in the constellation. */
+/** A blockchain address or a reference to another node in the constellation. */
 type AddressOrRef = Lowercase<Address> | NodeRef
+
+type NodeBase = Readonly<{
+  label: string
+  chain: ChainId
+  /** Set for existing nodes from codegen, absent for new nodes. */
+  address?: Lowercase<Address>
+  /** Deployment nonce — required for new nodes, optional for existing. */
+  nonce?: bigint
+}>
+
+/** A safe node spec — existing vault ref or new safe with required config. */
+export type SafeNode = NodeBase &
+  Readonly<{
+    type: 'SAFE'
+    threshold: number
+    owners: readonly (string | NodeRef)[]
+    modules?: readonly (string | NodeRef)[]
+    vault?: boolean
+  }>
+
+/** A roles modifier node spec — existing vault ref or new roles with modifier config. */
+export type RolesNode = NodeBase &
+  Readonly<{
+    type: 'ROLES'
+    target?: AddressOrRef
+    owner?: AddressOrRef
+    avatar?: AddressOrRef
+    multisend?: readonly Lowercase<Address>[]
+    roles?: readonly Record<string, any>[]
+    allowances?: readonly Record<string, any>[]
+  }>
+
+/** Any complete node that can be passed to `apply()`. */
+export type ConstellationNode = SafeNode | RolesNode
 
 type NewSafeProps = {
   /** Deployment nonce for CREATE2 address derivation. */
@@ -77,7 +111,7 @@ type NewSafeProps = {
   /** Safe owner addresses or node references. */
   owners: readonly AddressOrRef[]
   /** Module addresses or node references to enable on the safe. */
-  modules: readonly AddressOrRef[]
+  modules?: readonly AddressOrRef[]
   /** Whether this safe is a workspace vault. @default false */
   vault?: boolean
 }
@@ -196,7 +230,11 @@ export function constellation<
   function makeNodeRef(
     data: Record<string, any>
   ): Readonly<Record<string, any>> {
-    const ref = Object.freeze({ ...data, chain: opts.chain, _constellation: meta })
+    const ref = Object.freeze({
+      ...data,
+      chain: opts.chain,
+      _constellation: meta,
+    })
     return ref
   }
 

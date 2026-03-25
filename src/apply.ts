@@ -2,14 +2,9 @@ import type {
   ApplyConstellationPayload,
   ApplyConstellationResult,
 } from '@zodiac-os/api-types'
+import { invariant } from '@epic-web/invariant'
 import { ApiClient } from './api'
-import type { ConstellationMeta } from './constellation'
-
-type NodeLike = Readonly<Record<string, any>> & {
-  type: string
-  label: string
-  chain: number
-}
+import type { ConstellationMeta, ConstellationNode } from './constellation'
 
 type ApplyOpts = {
   /** API client instance. Defaults to a client configured from environment variables. */
@@ -29,7 +24,7 @@ type ApplyOpts = {
  * ```
  */
 export async function apply(
-  nodes: NodeLike[],
+  nodes: ConstellationNode[],
   opts?: ApplyOpts
 ): Promise<ApplyConstellationResult[]> {
   const api = opts?.api ?? new ApiClient()
@@ -37,16 +32,15 @@ export async function apply(
   // Group nodes by constellation, keyed on concatenated meta values
   const groups = new Map<
     string,
-    { meta: ConstellationMeta; nodes: NodeLike[] }
+    { meta: ConstellationMeta; nodes: ConstellationNode[] }
   >()
 
   for (const node of nodes) {
     const meta = (node as any)._constellation as ConstellationMeta | undefined
-    if (!meta) {
-      throw new Error(
-        `Node "${node.label}" is not associated with a constellation`
-      )
-    }
+    invariant(
+      meta,
+      `Node "${node.label}" is not associated with a constellation`
+    )
     const key = `${meta.workspaceId}:${meta.chain}:${meta.label}`
     let group = groups.get(key)
     if (!group) {
@@ -61,7 +55,7 @@ export async function apply(
     const specification = groupNodes.map(
       nodeToSpec
     ) as ApplyConstellationPayload['specification']
-    const result = await api.applyConstellation(meta.workspaceId as any, {
+    const result = await api.applyConstellation(meta.workspaceId, {
       label: meta.label,
       chain: meta.chain,
       specification,
@@ -72,7 +66,7 @@ export async function apply(
   return results
 }
 
-function nodeToSpec(node: NodeLike): Record<string, any> {
+function nodeToSpec(node: ConstellationNode): Record<string, any> {
   const { id, _constellation, ...rest } = node as Record<string, any>
   const spec: Record<string, any> = {}
 
@@ -90,7 +84,7 @@ function nodeToSpec(node: NodeLike): Record<string, any> {
 }
 
 function resolveValue(value: unknown): unknown {
-  if (isNodeRef(value)) {
+  if (isConstellationNode(value)) {
     return `$${value.label.toLowerCase()}`
   }
 
@@ -109,7 +103,7 @@ function resolveValue(value: unknown): unknown {
   return value
 }
 
-function isNodeRef(
+function isConstellationNode(
   value: unknown
 ): value is { type: string; label: string; chain: number } {
   if (typeof value === 'function' || typeof value === 'object') {
