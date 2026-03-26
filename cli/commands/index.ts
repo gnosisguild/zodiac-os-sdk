@@ -1,1 +1,0 @@
-export { typegen } from './typegen'
