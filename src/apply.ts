@@ -110,7 +110,9 @@ function nodeToSpec(
   spec.ref = refs.get(node)
   invariant(spec.ref != null, 'ref not found')
 
-  return stringifyBigints(spec) as ApplyConstellationPayload['specification'][number]
+  return stringifyBigints(
+    spec
+  ) as ApplyConstellationPayload['specification'][number]
 }
 
 function resolveRefs(
