@@ -22,7 +22,7 @@ Create a `zodiac.config.ts` in your project root:
 import { defineConfig } from '@zodiac-os/sdk/cli/config'
 
 export default defineConfig({
-  apiKey: 'zodiac_your-api-key',
+  apiKey: 'zodiac_...',
   // Optional: contracts to fetch for permissions authoring
   contracts: {
     mainnet: {
@@ -51,7 +51,7 @@ import { constellation } from '@zodiac-os/sdk'
 
 ### Scoping to a workspace and chain
 
-Each constellation is scoped to a single workspace and chain. The `workspace` option only accepts workspace names from your org.
+Each constellation is scoped to a single workspace and chain. The `workspace` option must be a valid workspace name from your org.
 
 ```ts
 const eth = constellation({
@@ -61,36 +61,28 @@ const eth = constellation({
 })
 ```
 
-### Referencing existing accounts
+### Referencing existing vaults
 
 Bracket access gives you existing Safes and Roles mods from the selected workspace. Names auto-complete from the codegen output.
 
 ```ts
-// Reference an existing Safe (all properties are already known from codegen)
-const ggDao = eth.safe['GG DAO']()
+// Reference an existing Safe — no invocation needed
+const ggDao = eth.safe['GG DAO']
 
-// Optionally pass overrides
-const ggDaoWithOverrides = eth.safe['GG DAO']({ threshold: 5 })
-```
+// Reference the canonical Roles mod for that Safe
+const ggDaoRoles = eth.roles['GG DAO']
 
-### Referencing existing Roles mods
-
-Bracket access on `eth.roles` with a Safe name gives the canonical Roles mod for that Safe:
-
-```ts
-const ggDaoRoles = eth.roles['GG DAO']({
-  roles: { eth_wrapping },
-})
+// Optionally invoke with overrides
+const ggDaoOverridden = eth.safe['GG DAO']({ threshold: 5 })
 ```
 
 ### Creating new accounts
 
-Use `.new(...)` on `eth.safe` or `eth.roles` to create new nodes:
+Use bracket access with a new label to create new nodes. Required fields are enforced by the type system:
 
 ```ts
-// New Safe — all required fields must be provided
-const newSafe = eth.safe.new({
-  label: 'New Safe',
+// New Safe — threshold, owners are required
+const newSafe = eth.safe['New Safe']({
   nonce: 0n,
   threshold: 2,
   owners: [
@@ -101,8 +93,8 @@ const newSafe = eth.safe.new({
 })
 
 // New Roles mod targeting an existing Safe
-const newRoles = eth.roles.new({
-  nonce: 123n,
+const newRoles = eth.roles['New Roles']({
+  nonce: 0n,
   target: ggDao,
 })
 ```
@@ -115,12 +107,22 @@ const newRoles = eth.roles.new({
 const aliceAddress = eth.user['Alice Sample']
 ```
 
-### Exporting the constellation
+### Applying the constellation
 
-Only explicitly exported nodes are included — there are no registration side-effects:
+The `apply()` function takes all nodes and sends them to the Zodiac OS API. Pass either a named object (keys become refs) or an array:
 
 ```ts
-export { ggDao, ggDaoRoles, newSafe, newRoles }
+import { apply } from '@zodiac-os/sdk'
+
+await apply({ ggDao, ggDaoRoles, newSafe, newRoles })
+```
+
+All referenced nodes must be included in the `apply()` call.
+
+By default, `apply()` creates an API client from the `ZODIAC_OS_API_KEY` environment variable. You can pass a custom client:
+
+```ts
+await apply({ ggDao, newRoles }, { api: new ApiClient({ apiKey: '...' }) })
 ```
 
 ## CLI reference
