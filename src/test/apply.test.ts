@@ -18,7 +18,7 @@ describe('apply', () => {
     )
   }
 
-  it('resolves node refs to $label strings', async () => {
+  it('resolves nested node refs to $ref strings', async () => {
     const eth = setup()
     const dao = eth.safe['GG DAO']
     const roles = eth.roles['New Roles']({
@@ -29,24 +29,54 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([roles], { api })
+    await apply([dao, roles], { api })
 
-    const spec = lastPayload().specification[0]
-    expect(spec.target).toBe('$gg dao')
-    expect(spec.owner).toBe('$gg dao')
-    expect(spec.avatar).toBe('$gg dao')
+    const spec = lastPayload().specification[1]
+    expect(spec.target).toBe('$0')
+    expect(spec.owner).toBe('$0')
+    expect(spec.avatar).toBe('$0')
   })
 
-  it('sets ref from label lowercased', async () => {
+  it('throws when a referenced node is not in the apply list', async () => {
     const eth = setup()
     const dao = eth.safe['GG DAO']
+    const roles = eth.roles['New Roles']({
+      nonce: 0n,
+      target: dao,
+      owner: dao,
+      avatar: dao,
+    })
+
+    const { api } = mockApi()
+    expect(apply([roles], { api })).rejects.toThrow(
+      'Node "GG DAO" is referenced not included in the apply() call'
+    )
+  })
+
+  it('uses array index as ref for array input', async () => {
+    const eth = setup()
+    const dao = eth.safe['GG DAO']
+    const treasury = eth.safe['Treasury']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { api })
+    await apply([dao, treasury], { api })
 
-    const spec = lastPayload().specification[0]
-    expect(spec.ref).toBe('gg dao')
-    expect(spec.label).toBe('GG DAO')
+    const specs = lastPayload().specification
+    expect(specs[0].ref).toBe('0')
+    expect(specs[1].ref).toBe('1')
+  })
+
+  it('uses object keys as refs', async () => {
+    const eth = setup()
+    const dao = eth.safe['GG DAO']
+    const treasury = eth.safe['Treasury']
+
+    const { api, lastPayload } = mockApi()
+    await apply({ dao, treasury }, { api })
+
+    const specs = lastPayload().specification
+    expect(specs[0].ref).toBe('dao')
+    expect(specs[1].ref).toBe('treasury')
   })
 
   it('converts bigint nonce to string', async () => {
@@ -78,17 +108,17 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([newSafe], { api })
+    await apply({ dao, roles, newSafe }, { api })
 
-    const spec = lastPayload().specification[0]
+    const spec = lastPayload().specification[2]
     expect(spec.owners).toEqual([
       codegen.users['Alice Sample'].personalSafes[1].address,
-      '$gg dao',
+      '$dao',
     ])
-    expect(spec.modules).toEqual(['$gg dao'])
+    expect(spec.modules).toEqual(['$roles'])
   })
 
-  it('strips id from codegen vault data', async () => {
+  it('strips _constellation from spec output', async () => {
     const eth = setup()
     const dao = eth.safe['GG DAO']
 
@@ -96,7 +126,7 @@ describe('apply', () => {
     await apply([dao], { api })
 
     const spec = lastPayload().specification[0]
-    expect(spec.id).toBeUndefined()
+    expect(spec._constellation).toBeUndefined()
   })
 
   it('passes label and chain from constellation metadata', async () => {
@@ -112,5 +142,12 @@ describe('apply', () => {
     const payload = lastPayload()
     expect(payload.label).toBe('my constellation')
     expect(payload.chain).toBe(1)
+  })
+
+  it('throws for invalid nodes', async () => {
+    const { api } = mockApi()
+    expect(() => apply([{ not: 'a node' } as any], { api })).toThrow(
+      'unexpected node input'
+    )
   })
 })

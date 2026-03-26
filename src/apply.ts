@@ -4,7 +4,11 @@ import type {
 } from '@zodiac-os/api-types'
 import { invariant } from '@epic-web/invariant'
 import { ApiClient } from './api'
-import type { ConstellationMeta, ConstellationNode } from './constellation'
+import type {
+  ConstellationMeta,
+  ConstellationNode,
+  ConstellationNodeInternal,
+} from './constellation'
 
 type ApplyOpts = {
   /** API client instance. Defaults to a client configured from environment variables. */
@@ -24,19 +28,20 @@ type ApplyOpts = {
  * ```
  */
 export async function apply(
-  nodes: ConstellationNode[],
+  nodes: ConstellationNode[] | { [key: string]: ConstellationNode },
   opts?: ApplyOpts
 ): Promise<ApplyConstellationResult[]> {
   const api = opts?.api ?? new ApiClient()
+  const refs = deriveRefs(nodes)
 
-  // Group nodes by constellation, keyed on concatenated meta values
+  // Group nodes by constellation (multiple constellations can be applied with a single call)
   const groups = new Map<
     string,
-    { meta: ConstellationMeta; nodes: ConstellationNode[] }
+    { meta: ConstellationMeta; nodes: ConstellationNodeInternal[] }
   >()
 
-  for (const node of nodes) {
-    const meta = (node as any)._constellation as ConstellationMeta | undefined
+  for (const node of refs.keys()) {
+    const meta = node._constellation
     invariant(
       meta,
       `Node "${node.label}" is not associated with a constellation`
@@ -52,9 +57,7 @@ export async function apply(
 
   const results: ApplyConstellationResult[] = []
   for (const { meta, nodes: groupNodes } of groups.values()) {
-    const specification = groupNodes.map(
-      nodeToSpec
-    ) as ApplyConstellationPayload['specification']
+    const specification = groupNodes.map((n) => nodeToSpec(n, refs))
     const result = await api.applyConstellation(meta.workspaceId, {
       label: meta.label,
       chain: meta.chain,
@@ -66,36 +69,75 @@ export async function apply(
   return results
 }
 
-function nodeToSpec(node: ConstellationNode): Record<string, any> {
+function deriveRefs(
+  nodes: ConstellationNode[] | { [key: string]: ConstellationNode }
+): Map<ConstellationNodeInternal, string> {
+  const refs = new Map<ConstellationNodeInternal, string>()
+
+  if (Array.isArray(nodes)) {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i]
+      invariant(
+        isConstellationNode(node),
+        `unexpected node input at index: ${i}`
+      )
+      refs.set(node, `${i}`)
+    }
+  } else {
+    for (const [key, node] of Object.entries(nodes)) {
+      invariant(
+        isConstellationNode(node),
+        `unexpected node input under key: ${key}`
+      )
+      refs.set(node, key)
+    }
+  }
+
+  return refs
+}
+
+function nodeToSpec(
+  node: ConstellationNodeInternal,
+  refs: Map<ConstellationNodeInternal, string>
+): ApplyConstellationPayload['specification'][number] {
   const { id, _constellation, ...rest } = node as Record<string, any>
   const spec: Record<string, any> = {}
 
   for (const [key, value] of Object.entries(rest)) {
-    spec[key] = resolveValue(value)
+    spec[key] = resolveRefs(value, refs)
   }
 
-  spec.ref = spec.label.toLowerCase()
+  spec.ref = refs.get(node)
+  invariant(spec.ref != null, 'ref not found')
 
   if (spec.nonce != null && typeof spec.nonce === 'bigint') {
     spec.nonce = spec.nonce.toString()
   }
 
-  return spec
+  return spec as ApplyConstellationPayload['specification'][number]
 }
 
-function resolveValue(value: unknown): unknown {
+function resolveRefs(
+  value: unknown,
+  refs: Map<ConstellationNodeInternal, string>
+): unknown {
   if (isConstellationNode(value)) {
-    return `$${value.label.toLowerCase()}`
+    const ref = refs.get(value)
+    invariant(
+      ref != null,
+      `Node "${value.label}" is referenced not included in the apply() call`
+    )
+    return `$${ref}`
   }
 
   if (Array.isArray(value)) {
-    return value.map(resolveValue)
+    return value.map((v) => resolveRefs(v, refs))
   }
 
   if (typeof value === 'object' && value !== null) {
     const resolved: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value)) {
-      resolved[k] = resolveValue(v)
+      resolved[k] = resolveRefs(v, refs)
     }
     return resolved
   }
@@ -105,14 +147,14 @@ function resolveValue(value: unknown): unknown {
 
 function isConstellationNode(
   value: unknown
-): value is { type: string; label: string; chain: number } {
+): value is ConstellationNodeInternal {
   if (typeof value === 'function' || typeof value === 'object') {
     const obj = value as any
     return (
       obj != null &&
       typeof obj.type === 'string' &&
-      typeof obj.label === 'string' &&
-      typeof obj.chain === 'number'
+      typeof obj.chain === 'number' &&
+      typeof obj._constellation === 'object'
     )
   }
   return false

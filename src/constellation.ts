@@ -102,6 +102,9 @@ export type RolesNode = NodeBase &
 
 /** Any complete node that can be passed to `apply()`. */
 export type ConstellationNode = SafeNode | RolesNode
+export type ConstellationNodeInternal = ConstellationNode & {
+  _constellation: ConstellationMeta
+}
 
 type NewSafeProps = {
   /** Deployment nonce for CREATE2 address derivation. */
