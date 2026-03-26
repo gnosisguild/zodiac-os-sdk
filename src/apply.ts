@@ -110,11 +110,7 @@ function nodeToSpec(
   spec.ref = refs.get(node)
   invariant(spec.ref != null, 'ref not found')
 
-  if (spec.nonce != null && typeof spec.nonce === 'bigint') {
-    spec.nonce = spec.nonce.toString()
-  }
-
-  return spec as ApplyConstellationPayload['specification'][number]
+  return stringifyBigints(spec) as ApplyConstellationPayload['specification'][number]
 }
 
 function resolveRefs(
@@ -140,6 +136,26 @@ function resolveRefs(
       resolved[k] = resolveRefs(v, refs)
     }
     return resolved
+  }
+
+  return value
+}
+
+function stringifyBigints(value: unknown): unknown {
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(stringifyBigints)
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const result: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value)) {
+      result[k] = stringifyBigints(v)
+    }
+    return result
   }
 
   return value

@@ -1,5 +1,6 @@
 /// <reference path="./zodiac-os-codegen.d.ts" />
-import { Address, ChainId } from '@zodiac-os/api-types'
+import type { Address, ChainId } from '@zodiac-os/api-types'
+import type { AllowanceSpec, RoleSpec } from './types'
 import { createRequire } from 'module'
 import type * as ZodiacOsCodegen from '.zodiac-os'
 import { UUID } from 'crypto'
@@ -96,8 +97,8 @@ export type RolesNode = NodeBase &
     owner?: AddressOrRef
     avatar?: AddressOrRef
     multisend?: readonly Lowercase<Address>[]
-    roles?: readonly Record<string, any>[]
-    allowances?: readonly Record<string, any>[]
+    roles?: readonly RoleSpec[]
+    allowances?: readonly AllowanceSpec[]
   }>
 
 /** Any complete node that can be passed to `apply()`. */
@@ -131,9 +132,9 @@ type NewRolesProps = {
   /** MultiSend contract addresses for batched transactions. Defaults to `['0x38869bf66a61cf6bdb996a6ae40d5853fd43b526', '0x9641d764fc13c8b624c04430c7356c1c7c8102e2']` */
   multisend?: readonly Lowercase<Address>[]
   /** Role definitions to configure on this modifier. */
-  roles?: readonly Record<string, any>[]
+  roles?: readonly RoleSpec[]
   /** Spending allowances to configure on this modifier. */
-  allowances?: readonly Record<string, any>[]
+  allowances?: readonly AllowanceSpec[]
 }
 
 type EntityAccessor<
