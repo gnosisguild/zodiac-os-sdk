@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.1.1...v1.2.0) (2026-03-26)
+
+
+### Features
+
+* add `constellation()` and `apply()` ([#7](https://github.com/gnosisguild/zodiac-os-sdk/issues/7)) ([d0ee4f6](https://github.com/gnosisguild/zodiac-os-sdk/commit/d0ee4f63ae0e68d6e67d3a114c1cfadd1d86f5bd))
+
+
+### Bug Fixes
+
+* point exports at the correct files ([730492f](https://github.com/gnosisguild/zodiac-os-sdk/commit/730492fa202513fe6e38033193dde8281f2c9829))
+
 ## [1.1.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.1.0...v1.1.1) (2025-11-07)
 
 
