@@ -1,10 +1,23 @@
-import type { EthSdkContracts } from '@gnosis-guild/eth-sdk'
 import { pathToFileURL } from 'url'
 import { resolve } from 'path'
 
+export type Contracts = {
+  [chain: string]: ContractsNode
+}
+export type ContractsNode = `0x${string}` | { [name: string]: ContractsNode }
+
 export interface ZodiacConfig {
   apiKey: `zodiac_${string}`
-  contracts?: EthSdkContracts
+  /**
+   * Contracts the `allow` kit should know about, keyed by chain prefix.
+   * Nested objects are allowed for grouping related addresses.
+   */
+  contracts?: Contracts
+  /**
+   * Directory where fetched ABIs are stored and read from.
+   * Resolved relative to the project root (cwd). Defaults to `./abis`.
+   */
+  abisDir?: string
 }
 
 export const defineConfig = (config: ZodiacConfig): ZodiacConfig => config
@@ -38,4 +51,10 @@ export async function loadConfig(
   }
 
   return config
+}
+
+export const DEFAULT_ABIS_DIR = 'abis'
+
+export function resolveAbisDir(config: ZodiacConfig): string {
+  return resolve(process.cwd(), config.abisDir ?? DEFAULT_ABIS_DIR)
 }

@@ -4,6 +4,8 @@ export default defineConfig({
   entry: {
     index: './src/index.ts',
     cli: './src/cli/index.ts',
+    'cli/config': './src/cli/config.ts',
+    'allow/index': './src/allow/index.ts',
   },
   format: 'esm',
   target: 'es2024',
