@@ -121,10 +121,10 @@ type NewSafeProps = {
 }
 
 type NewRolesProps = {
-  /** Deployment nonce for CREATE2 address derivation. */
-  nonce: bigint
-  /** The safe that this roles modifier controls. */
-  target: AddressOrRef
+  /** Deployment nonce for CREATE2 address derivation. Defaults to `0n` when omitted. */
+  nonce?: bigint
+  /** The safe that this roles modifier controls. Defaults to the new safe with the same label, when one exists. */
+  target?: AddressOrRef
   /** The account that calls will be executed from. Defaults to `target` value */
   avatar?: AddressOrRef
   /** The account that is allowed to update the configuration of the Roles Mod. Defaults to `target` value */
@@ -163,7 +163,9 @@ type EntityAccessor<
     : Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
         (<P extends Record<string, any>>(
           props: NP & { [key: string & {}]: any } & P
-        ) => Readonly<Prettify<P & { type: Type; label: string; chain: Ch }>>)
+        ) => Readonly<
+          Prettify<NP & P & { type: Type; label: string; chain: Ch }>
+        >)
 }
 
 type UserAccessor<C extends CodegenData, Ch extends number> = {
@@ -232,14 +234,19 @@ export function constellation<
     workspaceId: (ws?.workspaceId ?? '') as UUID,
   }
 
+  const newSafes = new Map<string, Readonly<Record<string, any>>>()
+
   function makeNodeRef(
     data: Record<string, any>
   ): Readonly<Record<string, any>> {
-    const ref = Object.freeze({
+    const ref: Record<string, any> = Object.freeze({
       ...data,
       chain: opts.chain,
       _constellation: meta,
     })
+    if (ref.type === 'SAFE' && typeof ref.label === 'string') {
+      newSafes.set(ref.label, ref)
+    }
     return ref
   }
 
@@ -255,6 +262,21 @@ export function constellation<
         if (cached) return cached
         const existing = registry[name]
         const fn = (overrides?: Record<string, any>) => {
+          const canonicalSafe =
+            type === 'ROLES' && !existing && !overrides?.target
+              ? newSafes.get(name)
+              : undefined
+          if (canonicalSafe) {
+            return makeNodeRef({
+              type,
+              nonce: 0n,
+              target: canonicalSafe,
+              owner: canonicalSafe,
+              avatar: canonicalSafe,
+              ...overrides,
+              label: name,
+            })
+          }
           return makeNodeRef({
             type,
             ...(existing || {}),

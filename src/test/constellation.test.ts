@@ -136,6 +136,26 @@ describe('constellation API', () => {
       expect(newRoles.nonce).toBe(123n)
       expect(newRoles.target).toBe(ggDao)
     })
+
+    it('defaults target/owner/avatar to the new safe with the same label', () => {
+      const eth = constellation(
+        { workspace: 'GG', label: 'l', chain: 1 },
+        { codegen }
+      )
+
+      const safe = eth.safe['New Safe']({
+        nonce: 0n,
+        threshold: 1,
+        owners: [eth.user['Alice Sample']],
+      })
+      const roles = eth.roles['New Safe']({
+        roles: [],
+      })
+
+      expect(roles.target).toBe(safe)
+      expect(roles.owner).toBe(safe)
+      expect(roles.avatar).toBe(safe)
+    })
   })
 
   describe('user accessor', () => {
@@ -212,6 +232,7 @@ describe('constellation API', () => {
       expect(roles.target).toBe(safe)
       expect(safe.modules).toContain(eth.roles['New Roles'])
     })
+
   })
 
   describe('workspace scoping', () => {
