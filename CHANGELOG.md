@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.4.0...v1.5.0) (2026-04-16)
+
+
+### Features
+
+* type-check contract addresses in defineConfig ([#12](https://github.com/gnosisguild/zodiac-os-sdk/issues/12)) ([61b9a02](https://github.com/gnosisguild/zodiac-os-sdk/commit/61b9a02b4225a1b3a20f637bba8fc8418bc90e43))
+
 ## [1.4.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.3.0...v1.4.0) (2026-04-16)
 
 
