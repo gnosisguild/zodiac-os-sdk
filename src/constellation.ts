@@ -67,8 +67,10 @@ type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 /** A reference to a node used in `owners`, `modules`, `target`, etc. */
 type NodeRef = Readonly<{ type: NodeType; label: string; chain: ChainId }>
 
-/** A blockchain address or a reference to another node in the constellation. */
-type AddressOrRef = Lowercase<Address> | NodeRef
+/** A blockchain address (checksummed or lowercase) or a reference to another
+ * node in the constellation. Values are normalized to lowercase before being
+ * sent to the API. */
+type AddressOrRef = Address | NodeRef
 
 type NodeBase = Readonly<{
   /** Human-readable identifier, unique within the constellation. */
@@ -108,7 +110,7 @@ export type RolesNode = NodeBase &
     /** The account that calls will be executed from. */
     avatar?: AddressOrRef
     /** MultiSend contract addresses for batched transactions. */
-    multisend?: readonly Lowercase<Address>[]
+    multisend?: readonly Address[]
     /** Role definitions configured on this modifier. */
     roles?: readonly RoleSpec[]
     /** Spending allowances configured on this modifier. */

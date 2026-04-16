@@ -152,6 +152,13 @@ function resolveRefs(value: unknown, refs: RefsIndex): unknown {
     return resolved
   }
 
+  // Normalize checksummed addresses to lowercase — the API stores addresses
+  // lowercase, and accepting checksummed input at the type level would
+  // otherwise smuggle mixed-case values into the payload.
+  if (typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value)) {
+    return value.toLowerCase()
+  }
+
   return value
 }
 
