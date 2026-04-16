@@ -71,7 +71,9 @@ type NodeRef = Readonly<{ type: NodeType; label: string; chain: ChainId }>
 type AddressOrRef = Lowercase<Address> | NodeRef
 
 type NodeBase = Readonly<{
+  /** Human-readable identifier, unique within the constellation. */
   label: string
+  /** Chain the node is deployed on. */
   chain: ChainId
   /** Set for existing nodes from codegen, absent for new nodes. */
   address?: Lowercase<Address>
@@ -82,22 +84,34 @@ type NodeBase = Readonly<{
 /** A safe node spec — existing vault ref or new safe with required config. */
 export type SafeNode = NodeBase &
   Readonly<{
+    /** Discriminator identifying this node as a Safe. */
     type: 'SAFE'
+    /** Number of owner signatures required to execute a transaction. */
     threshold: number
+    /** Safe owner addresses or node references. */
     owners: readonly (string | NodeRef)[]
+    /** Module addresses or node references enabled on the safe. */
     modules?: readonly (string | NodeRef)[]
+    /** Whether this safe shall appear as a vault in the workspace. @default false */
     vault?: boolean
   }>
 
 /** A roles modifier node spec — existing vault ref or new roles with modifier config. */
 export type RolesNode = NodeBase &
   Readonly<{
+    /** Discriminator identifying this node as a Roles modifier. */
     type: 'ROLES'
+    /** The safe that this roles modifier controls. */
     target?: AddressOrRef
+    /** The account that is allowed to update the configuration of the Roles mod. */
     owner?: AddressOrRef
+    /** The account that calls will be executed from. */
     avatar?: AddressOrRef
+    /** MultiSend contract addresses for batched transactions. */
     multisend?: readonly Lowercase<Address>[]
+    /** Role definitions configured on this modifier. */
     roles?: readonly RoleSpec[]
+    /** Spending allowances configured on this modifier. */
     allowances?: readonly AllowanceSpec[]
   }>
 
@@ -154,7 +168,8 @@ type EntityAccessor<
         >(
           overrides?: {
             [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } & Partial<NP> & O
+          } & Partial<NP> &
+            O
         ) => Readonly<
           Prettify<
             Omit<Entries[K], keyof O> &
@@ -163,11 +178,9 @@ type EntityAccessor<
           >
         >)
     : Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
-        (<P extends Record<string, any>>(
-          props: NP & { [key: string & {}]: any } & P
-        ) => Readonly<
-          Prettify<NP & P & { type: Type; label: string; chain: Ch }>
-        >)
+        ((
+          props: NP
+        ) => Readonly<Prettify<NP & { type: Type; label: string; chain: Ch }>>)
 }
 
 type UserAccessor<C extends CodegenData, Ch extends number> = {

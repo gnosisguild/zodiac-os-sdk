@@ -238,6 +238,7 @@ describe('constellation API', () => {
         threshold: 1,
         owners: [eth.user['Alice Sample']],
         modules: [eth.roles['New Roles']],
+        vault: true,
       })
       const roles = eth.roles['New Roles']({
         nonce: 0n,
