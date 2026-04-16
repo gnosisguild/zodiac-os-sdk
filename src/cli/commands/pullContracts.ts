@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { ZodiacConfig } from '../config'
-import { resolveAbisDir } from '../config'
+import { resolveAbisDir, resolveTypesDir } from '../config'
 import {
   abiFilePath,
   walkContracts,
@@ -13,13 +13,6 @@ import { generateAllowTypes, writeGenerated } from '../../allow/codegen'
 
 type Status = 'ok' | 'fetched' | 'missing'
 
-function resolveGeneratedFile(): string {
-  // Write to `<cwd>/.zodiac-os/allow.d.ts` so the generated global
-  // `AllowKit` interface is picked up by the user's tsconfig (node_modules
-  // files aren't automatically included for global augmentations).
-  return path.join(process.cwd(), '.zodiac-os', 'allow.d.ts')
-}
-
 export const pullContracts = async (config: ZodiacConfig) => {
   if (!config.contracts || Object.keys(config.contracts).length === 0) {
     console.log('No contracts defined in config, skipping.')
@@ -27,7 +20,7 @@ export const pullContracts = async (config: ZodiacConfig) => {
   }
 
   const abisDir = resolveAbisDir(config)
-  const generatedFile = resolveGeneratedFile()
+  const generatedFile = path.join(resolveTypesDir(config), 'allow.d.ts')
 
   let missing = 0
   let fetched = 0
