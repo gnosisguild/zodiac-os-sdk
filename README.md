@@ -99,6 +99,40 @@ const newRoles = eth.roles['New Roles']({
 })
 ```
 
+### Canonical Roles mods
+
+Every Safe has a canonical Roles mod hosting policies applied through the app. When you use the Safe label on the `roles` accessor, it resolves to that Safe's canonical Roles mod automatically.
+
+```ts
+// Enable roles on an existing Safe in your org
+const daoRoles = eth.roles['GG DAO']({
+  roles: [
+    /* ... */
+  ],
+})
+```
+
+### Circular references between new nodes
+
+New nodes can reference each other before either has been invoked — use the uninvoked factory as a forward reference:
+
+```ts
+const safe = eth.safe['New Safe']({
+  nonce: 0n,
+  threshold: 1,
+  owners: [eth.user['Alice Sample']],
+  // Forward reference to a Roles mod that doesn't exist yet
+  modules: [eth.roles['New Roles']],
+})
+
+const roles = eth.roles['New Roles']({
+  nonce: 0n,
+  target: safe,
+})
+```
+
+References are resolved by label at `apply()` time, so both sides of the cycle must be included in the call.
+
 ### Referencing users
 
 `eth.user[handle]` resolves a user to their personal Safe address on the current chain:

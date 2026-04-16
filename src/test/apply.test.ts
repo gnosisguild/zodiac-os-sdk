@@ -187,6 +187,23 @@ describe('apply', () => {
     expect(specs[1].avatar).toBe('$safe')
   })
 
+  it('resolves canonical roles mod linked to an existing safe', async () => {
+    const eth = setup()
+
+    const safe = eth.safe['GG DAO']
+    const roles = eth.roles['GG DAO']({
+      roles: [],
+    })
+
+    const { api, lastPayload } = mockApi()
+    await apply({ safe, roles }, { api })
+
+    const specs = lastPayload().specification
+    expect(specs[1].target).toBe('$safe')
+    expect(specs[1].owner).toBe('$safe')
+    expect(specs[1].avatar).toBe('$safe')
+  })
+
   it('throws for invalid nodes', async () => {
     const { api } = mockApi()
     expect(() => apply([{ not: 'a node' } as any], { api })).toThrow(

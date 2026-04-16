@@ -150,14 +150,16 @@ type EntityAccessor<
         (<
           O extends {
             [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } = {},
+          } & Partial<NP> = {},
         >(
           overrides?: {
             [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } & O
+          } & Partial<NP> & O
         ) => Readonly<
           Prettify<
-            Omit<Entries[K], keyof O> & O & { type: Type; label: K; chain: Ch }
+            Omit<Entries[K], keyof O> &
+              O &
+              Partial<NP> & { type: Type; label: K; chain: Ch }
           >
         >)
     : Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
@@ -252,7 +254,8 @@ export function constellation<
 
   function entityAccessor(
     registry: Record<string, Record<string, any>>,
-    type: string
+    type: string,
+    resolveCanonicalSafe?: (name: string) => Record<string, any> | undefined
   ) {
     const cache = new Map<string, Record<string, any>>()
     return new Proxy({} as Record<string, any>, {
@@ -263,8 +266,8 @@ export function constellation<
         const existing = registry[name]
         const fn = (overrides?: Record<string, any>) => {
           const canonicalSafe =
-            type === 'ROLES' && !existing && !overrides?.target
-              ? newSafes.get(name)
+            resolveCanonicalSafe && !overrides?.target
+              ? resolveCanonicalSafe(name)
               : undefined
           if (canonicalSafe) {
             return makeNodeRef({
@@ -316,9 +319,17 @@ export function constellation<
     )
   }
 
+  const safe = entityAccessor(vaultsByLabel, 'SAFE')
+  const roles = entityAccessor(vaultsByLabel, 'ROLES', (name) => {
+    const invoked = newSafes.get(name)
+    if (invoked) return invoked
+    if (name in vaultsByLabel) return safe[name]
+    return undefined
+  })
+
   return {
-    safe: entityAccessor(vaultsByLabel, 'SAFE'),
-    roles: entityAccessor(vaultsByLabel, 'ROLES'),
+    safe,
+    roles,
     user: userAccessor(),
   } as ConstellationResult<C, W, Ch>
 }

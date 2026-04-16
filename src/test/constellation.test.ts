@@ -156,6 +156,21 @@ describe('constellation API', () => {
       expect(roles.owner).toBe(safe)
       expect(roles.avatar).toBe(safe)
     })
+
+    it('defaults target/owner/avatar to the existing safe with the same label', () => {
+      const eth = constellation(
+        { workspace: 'GG', label: 'l', chain: 1 },
+        { codegen }
+      )
+
+      const roles = eth.roles['GG DAO']({
+        roles: [],
+      })
+
+      expect(roles.target).toBe(eth.safe['GG DAO'])
+      expect(roles.owner).toBe(eth.safe['GG DAO'])
+      expect(roles.avatar).toBe(eth.safe['GG DAO'])
+    })
   })
 
   describe('user accessor', () => {
@@ -232,7 +247,6 @@ describe('constellation API', () => {
       expect(roles.target).toBe(safe)
       expect(safe.modules).toContain(eth.roles['New Roles'])
     })
-
   })
 
   describe('workspace scoping', () => {
