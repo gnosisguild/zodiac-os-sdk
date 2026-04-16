@@ -175,7 +175,7 @@ describe('apply', () => {
       owners: [],
     })
     const roles = eth.roles['New Safe']({
-      roles: [],
+      roles: {},
     })
 
     const { api, lastPayload } = mockApi()
@@ -192,7 +192,7 @@ describe('apply', () => {
 
     const safe = eth.safe['GG DAO']
     const roles = eth.roles['GG DAO']({
-      roles: [],
+      roles: {},
     })
 
     const { api, lastPayload } = mockApi()

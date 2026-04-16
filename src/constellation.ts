@@ -1,9 +1,20 @@
 /// <reference path="./zodiac-os-codegen.d.ts" />
 import type { Address, ChainId } from '@zodiac-os/api-types'
-import type { AllowanceSpec, RoleSpec } from './types'
+import type { AllowanceSpec } from './types'
+import type { Annotation, Permission, PermissionSet } from 'zodiac-roles-sdk'
 import { createRequire } from 'module'
 import type * as ZodiacOsCodegen from '.zodiac-os'
 import { UUID } from 'crypto'
+
+/**
+ * A role definition keyed by role name. Permissions are expanded into
+ * `{ targets, annotations }` via `processPermissions` at `apply()` time.
+ */
+export type RoleDef = {
+  members: readonly AddressOrRef[]
+  permissions: readonly (Permission | PermissionSet | Promise<PermissionSet>)[]
+  annotations?: readonly Annotation[]
+}
 
 type User = {
   id: UUID
@@ -67,8 +78,10 @@ type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 /** A reference to a node used in `owners`, `modules`, `target`, etc. */
 type NodeRef = Readonly<{ type: NodeType; label: string; chain: ChainId }>
 
-/** A blockchain address or a reference to another node in the constellation. */
-type AddressOrRef = Lowercase<Address> | NodeRef
+/** A blockchain address (checksummed or lowercase) or a reference to another
+ * node in the constellation. Values are normalized to lowercase before being
+ * sent to the API. */
+type AddressOrRef = Address | NodeRef
 
 type NodeBase = Readonly<{
   /** Human-readable identifier, unique within the constellation. */
@@ -108,9 +121,9 @@ export type RolesNode = NodeBase &
     /** The account that calls will be executed from. */
     avatar?: AddressOrRef
     /** MultiSend contract addresses for batched transactions. */
-    multisend?: readonly Lowercase<Address>[]
+    multisend?: readonly Address[]
     /** Role definitions configured on this modifier. */
-    roles?: readonly RoleSpec[]
+    roles?: Record<string, RoleDef>
     /** Spending allowances configured on this modifier. */
     allowances?: readonly AllowanceSpec[]
   }>
@@ -144,9 +157,9 @@ type NewRolesProps = {
   /** The account that is allowed to update the configuration of the Roles Mod. Defaults to `target` value */
   owner?: AddressOrRef
   /** MultiSend contract addresses for batched transactions. Defaults to `['0x38869bf66a61cf6bdb996a6ae40d5853fd43b526', '0x9641d764fc13c8b624c04430c7356c1c7c8102e2']` */
-  multisend?: readonly Lowercase<Address>[]
+  multisend?: readonly Address[]
   /** Role definitions to configure on this modifier. */
-  roles?: readonly RoleSpec[]
+  roles?: Record<string, RoleDef>
   /** Spending allowances to configure on this modifier. */
   allowances?: readonly AllowanceSpec[]
 }
