@@ -1,11 +1,7 @@
 /// <reference path="./zodiac-os-codegen.d.ts" />
 import type { Address, ChainId } from '@zodiac-os/api-types'
 import type { AllowanceSpec } from './types'
-import type {
-  Annotation,
-  Permission,
-  PermissionSet,
-} from 'zodiac-roles-sdk'
+import type { Annotation, Permission, PermissionSet } from 'zodiac-roles-sdk'
 import { createRequire } from 'module'
 import type * as ZodiacOsCodegen from '.zodiac-os'
 import { UUID } from 'crypto'
@@ -16,11 +12,7 @@ import { UUID } from 'crypto'
  */
 export type RoleDef = {
   members: readonly AddressOrRef[]
-  permissions: readonly (
-    | Permission
-    | PermissionSet
-    | Promise<PermissionSet>
-  )[]
+  permissions: readonly (Permission | PermissionSet | Promise<PermissionSet>)[]
   annotations?: readonly Annotation[]
 }
 

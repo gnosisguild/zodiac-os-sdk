@@ -125,10 +125,7 @@ async function nodeToSpec(
 
   for (const [key, value] of Object.entries(rest)) {
     if (node.type === 'ROLES' && key === 'roles' && value != null) {
-      spec.roles = await expandRoles(
-        value as Record<string, RoleDef>,
-        refs
-      )
+      spec.roles = await expandRoles(value as Record<string, RoleDef>, refs)
       continue
     }
     spec[key] = resolveRefs(value, refs)
@@ -150,7 +147,7 @@ async function expandRoles(
     Object.entries(roles).map(async ([key, def]) => {
       const resolvedPermissions = (await Promise.all(
         def.permissions.map((p) => Promise.resolve(p))
-      )) as (Parameters<typeof processPermissions>[0][number])[]
+      )) as Parameters<typeof processPermissions>[0][number][]
       const { targets, annotations } = processPermissions(resolvedPermissions)
       return {
         key,
