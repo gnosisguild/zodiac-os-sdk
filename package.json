@@ -12,8 +12,18 @@
   "module": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "exports": {
-    "types": "./dist/index.d.mts",
-    "import": "./dist/index.mjs"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./allow": {
+      "types": "./dist/allow/index.d.mts",
+      "import": "./dist/allow/index.mjs"
+    },
+    "./cli/config": {
+      "types": "./dist/cli/config.d.mts",
+      "import": "./dist/cli/config.mjs"
+    }
   },
   "files": [
     "dist",
@@ -34,20 +44,23 @@
     "test": "bun test",
     "install-local-api-types": "cd ../zodiac-os/public-packages/api-types && pnpm pack-tmp && cd ../../../zodiac-os-sdk && tar -xzf /tmp/zodiac-os-api-types.tgz --strip-components=1 -C node_modules/@zodiac-os/api-types"
   },
+  "dependencies": {
+    "@epic-web/invariant": "1.0.0",
+    "@zodiac-os/api-types": "1.5.1",
+    "commander": "^14.0.3",
+    "ts-morph": "^27.0.2",
+    "zodiac-roles-deployments": "^3.2.0",
+    "zodiac-roles-sdk": "^3.4.7"
+  },
+  "peerDependencies": {
+    "ethers": "^6.13.0"
+  },
   "devDependencies": {
     "@types/bun": "^1.2.21",
+    "ethers": "^6.13.0",
     "prettier": "^3.6.2",
     "rimraf": "^6.1.0",
     "tsdown": "^0.21.4",
     "typescript": "^5.9.2"
-  },
-  "dependencies": {
-    "@epic-web/invariant": "1.0.0",
-    "@gnosis-guild/eth-sdk": "^0.4.0",
-    "@gnosis-guild/eth-sdk-client": "^0.1.6",
-    "@zodiac-os/api-types": "1.5.1",
-    "commander": "^14.0.3",
-    "ts-morph": "^27.0.2",
-    "zodiac-roles-sdk": "^3.4.7"
   }
 }

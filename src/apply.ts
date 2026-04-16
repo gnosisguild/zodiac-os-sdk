@@ -40,7 +40,7 @@ export async function apply(
     { meta: ConstellationMeta; nodes: ConstellationNodeInternal[] }
   >()
 
-  for (const node of refs.keys()) {
+  for (const node of refs.byIdentity.keys()) {
     const meta = node._constellation
     invariant(
       meta,
@@ -69,10 +69,25 @@ export async function apply(
   return results
 }
 
+type RefsIndex = {
+  byIdentity: Map<ConstellationNodeInternal, string>
+  byLabel: Map<string, string>
+}
+
+function labelKey(node: ConstellationNodeInternal): string {
+  return `${node._constellation.workspaceId}:${node.type}:${node.label}`
+}
+
 function deriveRefs(
   nodes: ConstellationNode[] | { [key: string]: ConstellationNode }
-): Map<ConstellationNodeInternal, string> {
-  const refs = new Map<ConstellationNodeInternal, string>()
+): RefsIndex {
+  const byIdentity = new Map<ConstellationNodeInternal, string>()
+  const byLabel = new Map<string, string>()
+
+  const register = (node: ConstellationNodeInternal, ref: string) => {
+    byIdentity.set(node, ref)
+    byLabel.set(labelKey(node), ref)
+  }
 
   if (Array.isArray(nodes)) {
     for (let i = 0; i < nodes.length; i++) {
@@ -81,7 +96,7 @@ function deriveRefs(
         isConstellationNode(node),
         `unexpected node input at index: ${i}`
       )
-      refs.set(node, `${i}`)
+      register(node, `${i}`)
     }
   } else {
     for (const [key, node] of Object.entries(nodes)) {
@@ -89,16 +104,16 @@ function deriveRefs(
         isConstellationNode(node),
         `unexpected node input under key: ${key}`
       )
-      refs.set(node, key)
+      register(node, key)
     }
   }
 
-  return refs
+  return { byIdentity, byLabel }
 }
 
 function nodeToSpec(
   node: ConstellationNodeInternal,
-  refs: Map<ConstellationNodeInternal, string>
+  refs: RefsIndex
 ): ApplyConstellationPayload['specification'][number] {
   const { id, _constellation, ...rest } = node as Record<string, any>
   const spec: Record<string, any> = {}
@@ -107,7 +122,7 @@ function nodeToSpec(
     spec[key] = resolveRefs(value, refs)
   }
 
-  spec.ref = refs.get(node)
+  spec.ref = refs.byIdentity.get(node)
   invariant(spec.ref != null, 'ref not found')
 
   return stringifyBigints(
@@ -115,12 +130,9 @@ function nodeToSpec(
   ) as ApplyConstellationPayload['specification'][number]
 }
 
-function resolveRefs(
-  value: unknown,
-  refs: Map<ConstellationNodeInternal, string>
-): unknown {
+function resolveRefs(value: unknown, refs: RefsIndex): unknown {
   if (isConstellationNode(value)) {
-    const ref = refs.get(value)
+    const ref = refs.byIdentity.get(value) ?? refs.byLabel.get(labelKey(value))
     invariant(
       ref != null,
       `Node "${value.label}" is referenced not included in the apply() call`
