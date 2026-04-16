@@ -149,7 +149,7 @@ describe('constellation API', () => {
         owners: [eth.user['Alice Sample']],
       })
       const roles = eth.roles['New Safe']({
-        roles: [],
+        roles: {},
       })
 
       expect(roles.target).toBe(safe)
@@ -164,7 +164,7 @@ describe('constellation API', () => {
       )
 
       const roles = eth.roles['GG DAO']({
-        roles: [],
+        roles: {},
       })
 
       expect(roles.target).toBe(eth.safe['GG DAO'])

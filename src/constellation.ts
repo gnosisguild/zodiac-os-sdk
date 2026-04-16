@@ -1,9 +1,28 @@
 /// <reference path="./zodiac-os-codegen.d.ts" />
 import type { Address, ChainId } from '@zodiac-os/api-types'
-import type { AllowanceSpec, RoleSpec } from './types'
+import type { AllowanceSpec } from './types'
+import type {
+  Annotation,
+  Permission,
+  PermissionSet,
+} from 'zodiac-roles-sdk'
 import { createRequire } from 'module'
 import type * as ZodiacOsCodegen from '.zodiac-os'
 import { UUID } from 'crypto'
+
+/**
+ * A role definition keyed by role name. Permissions are expanded into
+ * `{ targets, annotations }` via `processPermissions` at `apply()` time.
+ */
+export type RoleDef = {
+  members: readonly AddressOrRef[]
+  permissions: readonly (
+    | Permission
+    | PermissionSet
+    | Promise<PermissionSet>
+  )[]
+  annotations?: readonly Annotation[]
+}
 
 type User = {
   id: UUID
@@ -112,7 +131,7 @@ export type RolesNode = NodeBase &
     /** MultiSend contract addresses for batched transactions. */
     multisend?: readonly Address[]
     /** Role definitions configured on this modifier. */
-    roles?: readonly RoleSpec[]
+    roles?: Record<string, RoleDef>
     /** Spending allowances configured on this modifier. */
     allowances?: readonly AllowanceSpec[]
   }>
@@ -146,9 +165,9 @@ type NewRolesProps = {
   /** The account that is allowed to update the configuration of the Roles Mod. Defaults to `target` value */
   owner?: AddressOrRef
   /** MultiSend contract addresses for batched transactions. Defaults to `['0x38869bf66a61cf6bdb996a6ae40d5853fd43b526', '0x9641d764fc13c8b624c04430c7356c1c7c8102e2']` */
-  multisend?: readonly Lowercase<Address>[]
+  multisend?: readonly Address[]
   /** Role definitions to configure on this modifier. */
-  roles?: readonly RoleSpec[]
+  roles?: Record<string, RoleDef>
   /** Spending allowances to configure on this modifier. */
   allowances?: readonly AllowanceSpec[]
 }

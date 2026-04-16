@@ -3,11 +3,14 @@ import type {
   ApplyConstellationResult,
 } from '@zodiac-os/api-types'
 import { invariant } from '@epic-web/invariant'
+import { processPermissions } from 'zodiac-roles-sdk'
+import type { PermissionSet } from 'zodiac-roles-sdk'
 import { ApiClient } from './api'
 import type {
   ConstellationMeta,
   ConstellationNode,
   ConstellationNodeInternal,
+  RoleDef,
 } from './constellation'
 
 type ApplyOpts = {
@@ -57,7 +60,9 @@ export async function apply(
 
   const results: ApplyConstellationResult[] = []
   for (const { meta, nodes: groupNodes } of groups.values()) {
-    const specification = groupNodes.map((n) => nodeToSpec(n, refs))
+    const specification = await Promise.all(
+      groupNodes.map((n) => nodeToSpec(n, refs))
+    )
     const result = await api.applyConstellation(meta.workspaceId, {
       label: meta.label,
       chain: meta.chain,
@@ -111,14 +116,21 @@ function deriveRefs(
   return { byIdentity, byLabel }
 }
 
-function nodeToSpec(
+async function nodeToSpec(
   node: ConstellationNodeInternal,
   refs: RefsIndex
-): ApplyConstellationPayload['specification'][number] {
+): Promise<ApplyConstellationPayload['specification'][number]> {
   const { id, _constellation, ...rest } = node as Record<string, any>
   const spec: Record<string, any> = {}
 
   for (const [key, value] of Object.entries(rest)) {
+    if (node.type === 'ROLES' && key === 'roles' && value != null) {
+      spec.roles = await expandRoles(
+        value as Record<string, RoleDef>,
+        refs
+      )
+      continue
+    }
     spec[key] = resolveRefs(value, refs)
   }
 
@@ -128,6 +140,26 @@ function nodeToSpec(
   return stringifyBigints(
     spec
   ) as ApplyConstellationPayload['specification'][number]
+}
+
+async function expandRoles(
+  roles: Record<string, RoleDef>,
+  refs: RefsIndex
+): Promise<unknown[]> {
+  return Promise.all(
+    Object.entries(roles).map(async ([key, def]) => {
+      const resolvedPermissions = (await Promise.all(
+        def.permissions.map((p) => Promise.resolve(p))
+      )) as (Parameters<typeof processPermissions>[0][number])[]
+      const { targets, annotations } = processPermissions(resolvedPermissions)
+      return {
+        key,
+        members: resolveRefs(def.members, refs),
+        targets,
+        annotations: [...(def.annotations ?? []), ...annotations],
+      }
+    })
+  )
 }
 
 function resolveRefs(value: unknown, refs: RefsIndex): unknown {
