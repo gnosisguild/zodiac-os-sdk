@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.3.0...v1.4.0) (2026-04-16)
+
+
+### Features
+
+* roles permissions + checksum addresses ([#10](https://github.com/gnosisguild/zodiac-os-sdk/issues/10)) ([fa38515](https://github.com/gnosisguild/zodiac-os-sdk/commit/fa3851507c1dfeb77a105355ffd11823239bb458))
+
 ## [1.3.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.2.0...v1.3.0) (2026-04-16)
 
 
