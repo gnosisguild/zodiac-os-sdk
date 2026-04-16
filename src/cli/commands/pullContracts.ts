@@ -2,11 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { ZodiacConfig } from '../config'
 import { resolveAbisDir, resolveTypesDir } from '../config'
-import {
-  abiFilePath,
-  walkContracts,
-  writeAbi,
-} from '../../allow/abi'
+import { abiFilePath, walkContracts, writeAbi } from '../../allow/abi'
 import { fetchAbi } from '../../allow/fetch'
 import { chainIdFor } from '../../allow/networks'
 import { generateAllowTypes, writeGenerated } from '../../allow/codegen'

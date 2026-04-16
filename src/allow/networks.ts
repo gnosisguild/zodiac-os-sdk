@@ -26,14 +26,14 @@ export const CHAIN_IDS = {
   scroll: 534352,
   plasma: 9745,
   megaeth: 4326,
-} as const satisfies Record<string, number>;
+} as const satisfies Record<string, number>
 
-export type ChainPrefix = keyof typeof CHAIN_IDS;
+export type ChainPrefix = keyof typeof CHAIN_IDS
 
 export const chainIdFor = (prefix: string): number => {
-  const id = (CHAIN_IDS as Record<string, number>)[prefix];
+  const id = (CHAIN_IDS as Record<string, number>)[prefix]
   if (id === undefined) {
-    throw new Error(`Unknown chain prefix: ${prefix}`);
+    throw new Error(`Unknown chain prefix: ${prefix}`)
   }
-  return id;
-};
+  return id
+}
