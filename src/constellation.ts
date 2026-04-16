@@ -160,9 +160,10 @@ type EntityAccessor<
             Omit<Entries[K], keyof O> & O & { type: Type; label: K; chain: Ch }
           >
         >)
-    : <P extends Record<string, any>>(
-        props: NP & { [key: string & {}]: any } & P
-      ) => Readonly<Prettify<P & { type: Type; label: string; chain: Ch }>>
+    : Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
+        (<P extends Record<string, any>>(
+          props: NP & { [key: string & {}]: any } & P
+        ) => Readonly<Prettify<P & { type: Type; label: string; chain: Ch }>>)
 }
 
 type UserAccessor<C extends CodegenData, Ch extends number> = {
@@ -246,9 +247,12 @@ export function constellation<
     registry: Record<string, Record<string, any>>,
     type: string
   ) {
+    const cache = new Map<string, Record<string, any>>()
     return new Proxy({} as Record<string, any>, {
       get(_target: any, name: string) {
         if (typeof name !== 'string') return undefined
+        const cached = cache.get(name)
+        if (cached) return cached
         const existing = registry[name]
         const fn = (overrides?: Record<string, any>) => {
           return makeNodeRef({
@@ -258,15 +262,14 @@ export function constellation<
             label: name,
           })
         }
-        if (existing) {
-          Object.assign(fn, {
-            type,
-            ...existing,
-            label: name,
-            chain: opts.chain,
-            _constellation: meta,
-          })
-        }
+        Object.assign(fn, {
+          type,
+          ...(existing || {}),
+          label: name,
+          chain: opts.chain,
+          _constellation: meta,
+        })
+        cache.set(name, fn)
         return fn
       },
     })

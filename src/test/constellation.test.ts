@@ -194,6 +194,24 @@ describe('constellation API', () => {
 
       expect(newRoles.target).toBe(ggDao)
     })
+
+    it('supports circular refs between new nodes', () => {
+      const eth = setup()
+
+      const safe = eth.safe['New Safe']({
+        nonce: 0n,
+        threshold: 1,
+        owners: [eth.user['Alice Sample']],
+        modules: [eth.roles['New Roles']],
+      })
+      const roles = eth.roles['New Roles']({
+        nonce: 0n,
+        target: safe,
+      })
+
+      expect(roles.target).toBe(safe)
+      expect(safe.modules).toContain(eth.roles['New Roles'])
+    })
   })
 
   describe('workspace scoping', () => {
