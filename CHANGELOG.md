@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.2.0...v1.3.0) (2026-04-16)
+
+
+### Features
+
+* allow kit, canonical roles, and circular refs ([#8](https://github.com/gnosisguild/zodiac-os-sdk/issues/8)) ([27cf42e](https://github.com/gnosisguild/zodiac-os-sdk/commit/27cf42ebc0c272b6b9be920af8554d14cd265a0c))
+
 ## [1.2.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.1.1...v1.2.0) (2026-03-26)
 
 
