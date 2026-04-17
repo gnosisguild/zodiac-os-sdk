@@ -175,12 +175,13 @@ async function handleApiError(response: Response): Promise<never> {
     }
     throw error
   } else {
-    // Not JSON, read as text directly
-    const text = await response.text()
-    throw new ApiRequestError(text || 'Unexpected error', {
-      status: response.status,
-      statusText: response.statusText,
-    })
+    throw new ApiRequestError(
+      `${response.status} ${response.statusText}: ${response.url}`,
+      {
+        status: response.status,
+        statusText: response.statusText,
+      }
+    )
   }
 }
 
