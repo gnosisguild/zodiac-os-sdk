@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import type { ZodiacConfig } from '../config'
+import type { ResolvedConfig } from '../config'
 import { resolveAbisDir } from '../config'
-import { resolveZodiacOsDir } from '../paths'
+import { resolveZodiacDir } from '../../paths'
 import { abiFilePath, walkContracts, writeAbi } from '../../allow/abi'
 import { fetchAbi } from '../../allow/fetch'
 import { chainIdFor } from '../../allow/networks'
@@ -10,14 +10,17 @@ import { generateAllowTypes, writeGenerated } from '../../allow/codegen'
 
 type Status = 'ok' | 'fetched' | 'missing'
 
-export const pullContracts = async (config: ZodiacConfig) => {
+export const pullContracts = async (config: ResolvedConfig) => {
   if (!config.contracts || Object.keys(config.contracts).length === 0) {
     console.log('No contracts defined in config, skipping.')
     return
   }
 
   const abisDir = resolveAbisDir(config)
-  const generatedFile = path.join(resolveZodiacOsDir(), 'allow.d.ts')
+  const generatedFile = path.join(
+    resolveZodiacDir(config.rootDir),
+    'allow.d.ts'
+  )
 
   let missing = 0
   let fetched = 0

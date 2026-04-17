@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, spyOn, afterEach } from 'bun:test'
+import { describe, it, expect, mock, afterEach } from 'bun:test'
 import { readFileSync, rmSync, mkdirSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -66,24 +66,24 @@ describe('pullOrg', () => {
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
-  it('writes JS and d.ts to node_modules/.zodiac-os/', async () => {
+  it('writes JS and d.ts to .zodiac/', async () => {
     mkdirSync(tmpDir, { recursive: true })
-    spyOn(process, 'cwd').mockReturnValue(tmpDir)
 
     const { pullOrg } = await import('./pullOrg')
-    await pullOrg({ apiKey: 'zodiac_test-key' })
+    await pullOrg({ apiKey: 'zodiac_test-key', rootDir: tmpDir })
 
-    const outDir = join(tmpDir, 'node_modules', '.zodiac-os')
+    const outDir = join(tmpDir, '.zodiac')
 
-    // package.json is written
+    // package.json is written and pins CJS
     const pkg = JSON.parse(readFileSync(join(outDir, 'package.json'), 'utf-8'))
-    expect(pkg.name).toBe('.zodiac-os')
-    expect(pkg.type).toBe('module')
+    expect(pkg.type).toBe('commonjs')
+    expect(pkg.main).toBe('index.js')
+    expect(pkg.types).toBe('index.d.ts')
 
-    // JS file is written with proper exports
+    // JS file is written with CJS exports
     const js = readFileSync(join(outDir, 'index.js'), 'utf-8')
-    expect(js).toContain('export const users')
-    expect(js).toContain('export const vaults')
+    expect(js).toContain('exports.users')
+    expect(js).toContain('exports.vaults')
     expect(js).toContain('"Alice Example"')
     expect(js).toContain('Treasury')
 

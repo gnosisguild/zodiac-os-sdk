@@ -1,5 +1,5 @@
 import { pathToFileURL } from 'url'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 
 export type Contracts = {
   [chain: string]: ContractsNode
@@ -15,9 +15,15 @@ export interface ZodiacConfig {
   contracts?: Contracts
   /**
    * Directory where fetched ABIs are stored and read from.
-   * Resolved relative to the project root (cwd). Defaults to `./abis`.
+   * Resolved relative to the project root (config file's directory).
+   * Defaults to `./abis`.
    */
   abisDir?: string
+}
+
+/** User-provided config plus the directory it was loaded from. */
+export interface ResolvedConfig extends ZodiacConfig {
+  rootDir: string
 }
 
 /**
@@ -55,7 +61,7 @@ const DEFAULT_CONFIG_PATH = 'zodiac.config.ts'
 
 export async function loadConfig(
   configPath: string = DEFAULT_CONFIG_PATH
-): Promise<ZodiacConfig> {
+): Promise<ResolvedConfig> {
   const absolutePath = resolve(process.cwd(), configPath)
 
   let mod: Record<string, unknown>
@@ -79,11 +85,11 @@ export async function loadConfig(
     throw new Error(`Config is missing required field "apiKey"`)
   }
 
-  return config
+  return { ...config, rootDir: dirname(absolutePath) }
 }
 
 export const DEFAULT_ABIS_DIR = 'abis'
 
-export function resolveAbisDir(config: ZodiacConfig): string {
-  return resolve(process.cwd(), config.abisDir ?? DEFAULT_ABIS_DIR)
+export function resolveAbisDir(config: ResolvedConfig): string {
+  return resolve(config.rootDir, config.abisDir ?? DEFAULT_ABIS_DIR)
 }
