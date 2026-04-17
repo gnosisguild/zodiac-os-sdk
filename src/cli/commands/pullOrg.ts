@@ -9,15 +9,7 @@ import {
 } from 'ts-morph'
 import { mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { fileURLToPath } from 'url'
-
-function resolveNodeModulesDir(): string {
-  const selfPath = fileURLToPath(import.meta.url)
-  const match = selfPath.match(/^(.+[/\\]node_modules)[/\\]/)
-  if (match) return match[1]
-  // Fallback for development (running from source, not from node_modules)
-  return join(process.cwd(), 'node_modules')
-}
+import { resolveZodiacOsDir } from '../paths'
 
 const toLiteral = (value: unknown, indent = 0): string => {
   const pad = '  '.repeat(indent)
@@ -112,7 +104,7 @@ export const pullOrg = async (config: ZodiacConfig) => {
     }
   }
 
-  const outDir = join(resolveNodeModulesDir(), '.zodiac-os')
+  const outDir = resolveZodiacOsDir()
 
   mkdirSync(outDir, { recursive: true })
 
