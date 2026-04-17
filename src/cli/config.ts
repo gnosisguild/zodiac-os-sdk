@@ -18,12 +18,6 @@ export interface ZodiacConfig {
    * Resolved relative to the project root (cwd). Defaults to `./abis`.
    */
   abisDir?: string
-  /**
-   * Directory where generated type declarations (e.g. `allow.d.ts`) are
-   * written. Resolved relative to the project root (cwd).
-   * Defaults to `./.zodiac-os`.
-   */
-  typesDir?: string
 }
 
 /**
@@ -36,7 +30,6 @@ type DefineConfigInput = {
   apiKey: `zodiac_${string}`
   contracts?: Record<string, unknown>
   abisDir?: string
-  typesDir?: string
 }
 
 /**
@@ -90,12 +83,7 @@ export async function loadConfig(
 }
 
 export const DEFAULT_ABIS_DIR = 'abis'
-export const DEFAULT_TYPES_DIR = '.zodiac-os'
 
 export function resolveAbisDir(config: ZodiacConfig): string {
   return resolve(process.cwd(), config.abisDir ?? DEFAULT_ABIS_DIR)
-}
-
-export function resolveTypesDir(config: ZodiacConfig): string {
-  return resolve(process.cwd(), config.typesDir ?? DEFAULT_TYPES_DIR)
 }

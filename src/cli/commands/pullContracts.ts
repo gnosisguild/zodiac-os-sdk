@@ -1,7 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { ZodiacConfig } from '../config'
-import { resolveAbisDir, resolveTypesDir } from '../config'
+import { resolveAbisDir } from '../config'
+import { resolveZodiacOsDir } from '../paths'
 import { abiFilePath, walkContracts, writeAbi } from '../../allow/abi'
 import { fetchAbi } from '../../allow/fetch'
 import { chainIdFor } from '../../allow/networks'
@@ -16,7 +17,7 @@ export const pullContracts = async (config: ZodiacConfig) => {
   }
 
   const abisDir = resolveAbisDir(config)
-  const generatedFile = path.join(resolveTypesDir(config), 'allow.d.ts')
+  const generatedFile = path.join(resolveZodiacOsDir(), 'allow.d.ts')
 
   let missing = 0
   let fetched = 0
