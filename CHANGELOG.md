@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.5.0...v1.6.0) (2026-04-17)
+
+
+### Features
+
+* publish codegen consolidation (node_modules/.zodiac-os) ([#15](https://github.com/gnosisguild/zodiac-os-sdk/issues/15)) ([964f707](https://github.com/gnosisguild/zodiac-os-sdk/commit/964f707cfd812ebef93f4e031526190a40431e2f))
+
 ## [1.5.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.4.0...v1.5.0) (2026-04-16)
 
 
