@@ -18,10 +18,8 @@ export type Options = {
   headers?: Record<string, string>
 }
 
-const {
-  ZODIAC_API_KEY,
-  ZODIAC_OS_API_URL = 'https://app.zodiac.eco/api/v1',
-} = process.env
+const { ZODIAC_API_KEY, ZODIAC_API_URL = 'https://app.zodiac.eco/api/v1' } =
+  process.env
 
 export class ApiClient {
   private apiKey: string
@@ -30,7 +28,7 @@ export class ApiClient {
   private headers: Record<string, string>
 
   constructor({
-    baseUrl = ZODIAC_OS_API_URL,
+    baseUrl = ZODIAC_API_URL,
     fetch: customFetch = fetch,
     headers = {},
     apiKey = ZODIAC_API_KEY,
