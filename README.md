@@ -153,7 +153,7 @@ await apply({ ggDao, ggDaoRoles, newSafe, newRoles })
 
 All referenced nodes must be included in the `apply()` call.
 
-By default, `apply()` creates an API client from the `ZODIAC_OS_API_KEY` environment variable. You can pass a custom client:
+By default, `apply()` creates an API client from the `ZODIAC_API_KEY` environment variable. You can pass a custom client:
 
 ```ts
 await apply({ ggDao, newRoles }, { api: new ApiClient({ apiKey: '...' }) })
