@@ -39,7 +39,7 @@ export default defineConfig({
 zodiac-os pull
 ```
 
-This generates typed data in `node_modules/.zodiac-os/` with your org's users and vaults.
+This generates typed data in `.zodiac/` at your project root with your org's users and vaults. Add `.zodiac/` to your `.gitignore`.
 
 ## Constellation API
 

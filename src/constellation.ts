@@ -3,7 +3,8 @@ import type { Address, ChainId } from '@zodiac-os/api-types'
 import type { AllowanceSpec } from './types'
 import type { Annotation, Permission, PermissionSet } from 'zodiac-roles-sdk'
 import { createRequire } from 'module'
-import type * as ZodiacOsCodegen from '.zodiac-os'
+import { resolveZodiacDir } from './paths'
+import type * as ZodiacOsCodegen from '.zodiac'
 import { UUID } from 'crypto'
 
 /**
@@ -223,7 +224,7 @@ export type ConstellationMeta = {
 
 function loadCodegen(): CodegenData {
   const require = createRequire(import.meta.url)
-  return require('.zodiac-os') as CodegenData
+  return require(resolveZodiacDir()) as CodegenData
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { ZodiacConfig } from '../config'
+import type { ResolvedConfig } from '../config'
 import { ApiClient } from '../../api'
 import { invariant } from '@epic-web/invariant'
 import {
@@ -9,7 +9,7 @@ import {
 } from 'ts-morph'
 import { mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { resolveZodiacOsDir } from '../paths'
+import { resolveZodiacDir } from '../../paths'
 
 const toLiteral = (value: unknown, indent = 0): string => {
   const pad = '  '.repeat(indent)
@@ -36,7 +36,7 @@ const toLiteral = (value: unknown, indent = 0): string => {
   return String(value)
 }
 
-export const pullOrg = async (config: ZodiacConfig) => {
+export const pullOrg = async (config: ResolvedConfig) => {
   const client = new ApiClient({
     apiKey: config.apiKey,
   })
@@ -48,16 +48,27 @@ export const pullOrg = async (config: ZodiacConfig) => {
 
   const allRawVaults = workspaceVaults.flatMap((ws) => ws.vaults)
 
-  const { result: accounts } = await client.resolveConstellation(
-    workspaceVaults[0].workspaceId, // can just use any workspace to resolve
-    {
-      specification: allRawVaults.map((vault) => ({
-        type: 'SAFE',
-        chain: vault.chain,
-        address: vault.address,
-      })),
-    }
-  )
+  // Skip resolve when there are no vaults (avoids a 404 on the ws-id lookup).
+  let accounts: Awaited<
+    ReturnType<typeof client.resolveConstellation>
+  >['result'] = []
+  if (allRawVaults.length > 0) {
+    const response = await client.resolveConstellation(
+      workspaceVaults[0].workspaceId, // any workspace works for the resolve route
+      {
+        specification: allRawVaults.map((vault) => ({
+          type: 'SAFE',
+          chain: vault.chain,
+          address: vault.address,
+        })),
+      }
+    )
+    invariant(
+      response?.result?.length === allRawVaults.length,
+      `resolveConstellation returned ${response?.result?.length ?? 0} accounts for ${allRawVaults.length} vaults`
+    )
+    accounts = response.result
+  }
 
   let accountIndex = 0
   const vaultsRecord: Record<string, unknown> = {}
@@ -104,17 +115,16 @@ export const pullOrg = async (config: ZodiacConfig) => {
     }
   }
 
-  const outDir = resolveZodiacOsDir()
+  const outDir = resolveZodiacDir(config.rootDir)
 
   mkdirSync(outDir, { recursive: true })
 
-  // Write package.json so .zodiac-os is importable
+  // Pin CJS so `require()` works regardless of the parent package.json's type
   writeFileSync(
     join(outDir, 'package.json'),
     JSON.stringify(
       {
-        name: '.zodiac-os',
-        type: 'module',
+        type: 'commonjs',
         main: 'index.js',
         types: 'index.d.ts',
       },
@@ -127,7 +137,7 @@ export const pullOrg = async (config: ZodiacConfig) => {
   const project = new Project({
     compilerOptions: {
       declaration: true,
-      module: ModuleKind.ESNext,
+      module: ModuleKind.CommonJS,
       target: ScriptTarget.ESNext,
       outDir,
     },
