@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.6.0...v1.6.1) (2026-04-20)
+
+
+### Bug Fixes
+
+* codegen output dir ([#17](https://github.com/gnosisguild/zodiac-os-sdk/issues/17)) ([ae883b1](https://github.com/gnosisguild/zodiac-os-sdk/commit/ae883b19849341b5b1dbe991025a7ee67f03a0a6))
+* rename env var ([#19](https://github.com/gnosisguild/zodiac-os-sdk/issues/19)) ([43afa46](https://github.com/gnosisguild/zodiac-os-sdk/commit/43afa46b75de2375c3ce4a3a28b411fcc1847318))
+
 ## [1.6.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.5.0...v1.6.0) (2026-04-17)
 
 
