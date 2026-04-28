@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.7.0...v1.7.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* **cli:** update pull-org description to mention accounts (not vaults) ([#23](https://github.com/gnosisguild/zodiac-os-sdk/issues/23)) ([81ed2f7](https://github.com/gnosisguild/zodiac-os-sdk/commit/81ed2f71523a8eba1c84828cffe210fab4125ca9))
+
 ## [1.7.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.6.1...v1.7.0) (2026-04-28)
 
 
