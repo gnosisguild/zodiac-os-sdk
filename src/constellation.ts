@@ -48,7 +48,7 @@ type WorkspaceAccounts = {
   delays: Readonly<Record<string, Account>>
 }
 
-/** Shape of the codegen data produced by `zodiac-os pull-org`. */
+/** Shape of the codegen data produced by `zodiac pull-org`. */
 export type CodegenData = {
   users: Readonly<Record<string, User>>
   accounts: Readonly<Record<string, WorkspaceAccounts>>

@@ -77,7 +77,7 @@ export const pullContracts = async (config: ResolvedConfig) => {
     console.log('')
     console.log('Missing ABIs must be provided manually. Paste the contract')
     console.log(
-      'ABI JSON at the paths listed above and re-run `zodiac-os pull-contracts`.'
+      'ABI JSON at the paths listed above and re-run `zodiac pull-contracts`.'
     )
   }
 
