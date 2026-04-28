@@ -163,7 +163,7 @@ Options:
   -h, --help           display help for command
 
 Commands:
-  pull-org             Fetch Zodiac users and vaults, generate TypeScript types
+  pull-org             Fetch Zodiac users and accounts, generate TypeScript types
   pull-contracts       Fetch contract ABIs, generate typed permissions kit
   pull                 Fetch Zodiac org and contracts ABI, generate SDK functions
   help [command]       display help for command
