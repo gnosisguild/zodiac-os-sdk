@@ -4,7 +4,6 @@ import type { AllowanceSpec } from './types'
 import type { Annotation, Permission, PermissionSet } from 'zodiac-roles-sdk'
 import { createRequire } from 'module'
 import { resolveZodiacDir } from './paths'
-import type * as ZodiacOsCodegen from '.zodiac'
 import { UUID } from 'crypto'
 
 /**
@@ -48,10 +47,12 @@ export type CodegenData = {
   vaults: Readonly<Record<string, WorkspaceVaults>>
 }
 
-type GeneratedCodegen = {
-  users: typeof ZodiacOsCodegen.users
-  vaults: typeof ZodiacOsCodegen.vaults
-}
+// If `pull-org` has been run, the consumer's `.zodiac/index.d.ts` augments
+// `ZodiacGeneratedCodegen` with literal `users`/`vaults` shapes. Otherwise
+// the interface is empty and we fall back to the wide `CodegenData`.
+type GeneratedCodegen = ZodiacGeneratedCodegen extends CodegenData
+  ? ZodiacGeneratedCodegen
+  : CodegenData
 
 type ConstellationOpts<C extends CodegenData> = {
   /** Workspace to scope vaults and roles to. */
@@ -137,8 +138,8 @@ export type ConstellationNodeInternal = ConstellationNode & {
 }
 
 type NewSafeProps = {
-  /** Deployment nonce for CREATE2 address derivation. Defaults to `0n` when omitted. */
-  nonce?: bigint
+  /** Deployment nonce for CREATE2 address derivation. */
+  nonce: bigint
   /** Number of owner signatures required to execute a transaction. */
   threshold: number
   /** Safe owner addresses or node references. */
@@ -150,8 +151,8 @@ type NewSafeProps = {
 }
 
 type NewRolesProps = {
-  /** Deployment nonce for CREATE2 address derivation. Defaults to `0n` when omitted. */
-  nonce?: bigint
+  /** Deployment nonce for CREATE2 address derivation. */
+  nonce: bigint
   /** The safe that this roles modifier controls. Defaults to the new safe with the same label, when one exists. */
   target?: AddressOrRef
   /** The account that calls will be executed from. Defaults to `target` value */
@@ -167,36 +168,52 @@ type NewRolesProps = {
   allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
 }
 
+type ExistingNodeAccessor<
+  Type extends string,
+  K extends string,
+  E,
+  Ch extends ChainId,
+  NP extends Record<string, any>,
+> = Readonly<Prettify<E & { type: Type; label: K; chain: Ch }>> &
+  (<
+    O extends {
+      [P in Exclude<keyof E & string, 'id' | 'label'>]?: any
+    } & Partial<NP> = {},
+  >(
+    overrides?: {
+      [P in Exclude<keyof E & string, 'id' | 'label'>]?: any
+    } & Partial<NP> &
+      O
+  ) => Readonly<
+    Prettify<
+      Omit<E, keyof O> & O & Partial<NP> & { type: Type; label: K; chain: Ch }
+    >
+  >)
+
+type NewNodeAccessor<
+  Type extends string,
+  Ch extends ChainId,
+  NP extends Record<string, any>,
+> = Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
+  ((
+    props: NP
+  ) => Readonly<Prettify<NP & { type: Type; label: string; chain: Ch }>>)
+
 type EntityAccessor<
   Type extends string,
   Entries extends Record<string, any>,
   Ch extends ChainId = ChainId,
   NP extends Record<string, any> = Record<string, any>,
 > = {
-  readonly [K in
-    | (keyof Entries & string)
-    | (string & {})]: K extends keyof Entries & string
-    ? Readonly<Prettify<Entries[K] & { type: Type; label: K; chain: Ch }>> &
-        (<
-          O extends {
-            [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } & Partial<NP> = {},
-        >(
-          overrides?: {
-            [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } & Partial<NP> &
-            O
-        ) => Readonly<
-          Prettify<
-            Omit<Entries[K], keyof O> &
-              O &
-              Partial<NP> & { type: Type; label: K; chain: Ch }
-          >
-        >)
-    : Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
-        ((
-          props: NP
-        ) => Readonly<Prettify<NP & { type: Type; label: string; chain: Ch }>>)
+  readonly [K in keyof Entries & string]: ExistingNodeAccessor<
+    Type,
+    K,
+    Entries[K],
+    Ch,
+    NP
+  >
+} & {
+  readonly [key: string]: NewNodeAccessor<Type, Ch, NP>
 }
 
 type UserAccessor<C extends CodegenData, Ch extends number> = {
@@ -301,7 +318,6 @@ export function constellation<
           if (canonicalSafe) {
             return makeNodeRef({
               type,
-              nonce: 0n,
               target: canonicalSafe,
               owner: canonicalSafe,
               avatar: canonicalSafe,
@@ -311,7 +327,7 @@ export function constellation<
           }
           return makeNodeRef({
             type,
-            ...(existing || { nonce: 0n }),
+            ...(existing || {}),
             ...overrides,
             label: name,
           })

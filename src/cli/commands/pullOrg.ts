@@ -172,6 +172,20 @@ export const pullOrg = async (config: ResolvedConfig) => {
   for (const outputFile of emitResult.getOutputFiles()) {
     const filePath = outputFile.getFilePath()
     const fileName = filePath.includes('.d.ts') ? 'index.d.ts' : 'index.js'
-    writeFileSync(join(outDir, fileName), outputFile.getText())
+    let contents = outputFile.getText()
+    // Augment the SDK's global `ZodiacGeneratedCodegen` interface so
+    // `constellation()`'s default type parameter picks up these literal
+    // shapes automatically.
+    if (fileName === 'index.d.ts') {
+      contents += `
+declare global {
+    interface ZodiacGeneratedCodegen {
+        users: typeof users;
+        vaults: typeof vaults;
+    }
+}
+`
+    }
+    writeFileSync(join(outDir, fileName), contents)
   }
 }

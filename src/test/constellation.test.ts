@@ -149,6 +149,7 @@ describe('constellation API', () => {
         owners: [eth.user['Alice Sample']],
       })
       const roles = eth.roles['New Safe']({
+        nonce: 0n,
         roles: {},
       })
 

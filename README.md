@@ -78,10 +78,10 @@ const ggDaoOverridden = eth.safe['GG DAO']({ threshold: 5 })
 
 ### Creating new accounts
 
-Use bracket access with a new label to create new nodes. Required fields are enforced by the type system:
+Use bracket access with a new label to create new nodes. Every mandatory field (`nonce`, `threshold`, `owners` for Safes; `nonce` for Roles mods) must be supplied explicitly — the SDK does not inject any runtime defaults. The type system surfaces a missing field as a compile-time error so you can't ship an incomplete spec.
 
 ```ts
-// New Safe — threshold, owners are required
+// New Safe — nonce, threshold, owners are required
 const newSafe = eth.safe['New Safe']({
   nonce: 0n,
   threshold: 2,
@@ -98,6 +98,8 @@ const newRoles = eth.roles['New Roles']({
   target: ggDao,
 })
 ```
+
+When a bracket label matches an existing account from your codegen, all overrides become optional — you pass only the fields you want to change against the live configuration.
 
 ### Canonical Roles mods
 
