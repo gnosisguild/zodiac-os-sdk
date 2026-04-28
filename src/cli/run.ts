@@ -18,7 +18,7 @@ export const run = async (argv: string[] = process.argv) => {
 
   program
     .command('pull-org')
-    .description('Fetch Zodiac users and vaults, generate TypeScript types')
+    .description('Fetch Zodiac users and accounts, generate TypeScript types')
     .action(async (_opts, cmd) => {
       const config = await loadConfig(cmd.optsWithGlobals().config)
       await pullOrg(config)
