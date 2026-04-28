@@ -16,17 +16,18 @@ const mockUsers = [
   },
 ]
 
-const mockVaults = [
+const mockAccounts = [
   {
     workspaceId: 'ws-1',
     workspaceName: 'Test Workspace',
-    vaults: [
+    accounts: [
       {
         id: 'vault-1',
+        type: 'SAFE',
         label: 'Treasury',
-        chainId: 1,
+        chain: 1,
         address: '0xaaaa00000000000000000000000000000000aaaa',
-        canonicalRolesAddress: '0x0000000000000000000000000000000000000000',
+        vault: true,
       },
     ],
   },
@@ -50,8 +51,8 @@ mock.module('../../api', () => ({
     listUsers() {
       return Promise.resolve(mockUsers)
     }
-    listVaults() {
-      return Promise.resolve(mockVaults)
+    listAccounts() {
+      return Promise.resolve(mockAccounts)
     }
     resolveConstellation() {
       return Promise.resolve({ result: [mockResolvedSafe] })
@@ -83,13 +84,19 @@ describe('pullOrg', () => {
     // JS file is written with CJS exports
     const js = readFileSync(join(outDir, 'index.js'), 'utf-8')
     expect(js).toContain('exports.users')
-    expect(js).toContain('exports.vaults')
+    expect(js).toContain('exports.accounts')
     expect(js).toContain('"Alice Example"')
     expect(js).toContain('Treasury')
+    expect(js).toContain('safes:')
+    expect(js).toContain('rolesMods:')
+    expect(js).toContain('delays:')
+    expect(js).toContain('vault: true')
 
     // d.ts file is written
     const dts = readFileSync(join(outDir, 'index.d.ts'), 'utf-8')
     expect(dts).toContain('export declare const users')
-    expect(dts).toContain('export declare const vaults')
+    expect(dts).toContain('export declare const accounts')
+    expect(dts).toContain('declare global')
+    expect(dts).toContain('ZodiacGeneratedCodegen')
   })
 })

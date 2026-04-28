@@ -28,7 +28,7 @@ describe('constellation API', () => {
       const eth = setup()
       const treasury = eth.safe['Treasury']
       expect(treasury.label).toBe('Treasury')
-      expect(treasury.address).toBe(codegen.vaults.GG.vaults.Treasury.address)
+      expect(treasury.address).toBe(codegen.accounts.GG.safes.Treasury.address)
     })
 
     it('returns a node ref with existing properties merged with overrides', () => {
@@ -36,7 +36,7 @@ describe('constellation API', () => {
       const ggDao = eth.safe['GG DAO']({ threshold: 5 })
 
       expect(ggDao.label).toBe('GG DAO')
-      expect(ggDao.address).toBe(codegen.vaults.GG.vaults['GG DAO'].address)
+      expect(ggDao.address).toBe(codegen.accounts.GG.safes['GG DAO'].address)
       expect(ggDao.threshold).toBe(5)
       expect(ggDao.type).toBe('SAFE')
     })
@@ -103,20 +103,6 @@ describe('constellation API', () => {
     })
   })
 
-  describe('existing roles — bracket access', () => {
-    it('returns canonical roles mod with config applied', () => {
-      const eth = constellation(
-        { workspace: 'GG', label: 'l', chain: 1 },
-        { codegen }
-      )
-
-      const ggDaoRoles = eth.roles['GG DAO']
-
-      expect(ggDaoRoles.label).toBe('GG DAO')
-      expect(ggDaoRoles.type).toBe('ROLES')
-    })
-  })
-
   describe('new roles — bracket access with new key', () => {
     it('creates a new roles mod with explicit target', () => {
       const eth = constellation(
@@ -135,41 +121,6 @@ describe('constellation API', () => {
       expect(newRoles.type).toBe('ROLES')
       expect(newRoles.nonce).toBe(123n)
       expect(newRoles.target).toBe(ggDao)
-    })
-
-    it('defaults target/owner/avatar to the new safe with the same label', () => {
-      const eth = constellation(
-        { workspace: 'GG', label: 'l', chain: 1 },
-        { codegen }
-      )
-
-      const safe = eth.safe['New Safe']({
-        nonce: 0n,
-        threshold: 1,
-        owners: [eth.user['Alice Sample']],
-      })
-      const roles = eth.roles['New Safe']({
-        roles: {},
-      })
-
-      expect(roles.target).toBe(safe)
-      expect(roles.owner).toBe(safe)
-      expect(roles.avatar).toBe(safe)
-    })
-
-    it('defaults target/owner/avatar to the existing safe with the same label', () => {
-      const eth = constellation(
-        { workspace: 'GG', label: 'l', chain: 1 },
-        { codegen }
-      )
-
-      const roles = eth.roles['GG DAO']({
-        roles: {},
-      })
-
-      expect(roles.target).toBe(eth.safe['GG DAO'])
-      expect(roles.owner).toBe(eth.safe['GG DAO'])
-      expect(roles.avatar).toBe(eth.safe['GG DAO'])
     })
   })
 

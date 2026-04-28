@@ -1,52 +1,14 @@
-// Fallback ambient declarations for the .zodiac codegen module and for
-// the AllowKit interface. When `pull-org` / `pull-contracts` have been run,
-// the files under `<cwd>/.zodiac/` provide narrow types that take
-// precedence over these empty fallbacks.
+// Ambient fallbacks. Script file (no imports / exports), so top-level
+// interface declarations are implicitly global. Consumers augment these
+// via files generated into `<cwd>/.zodiac/` by `zodiac-os pull-org` /
+// `pull-contracts`.
 
-declare global {
-  // Augmented by `<cwd>/.zodiac/allow.d.ts` when `pull-contracts` runs.
-  interface AllowKit {}
-}
+// Augmented by `<cwd>/.zodiac/allow.d.ts` (from `pull-contracts`) with
+// narrow per-chain contract typings.
+interface AllowKit {}
 
-declare module '.zodiac' {
-  import { Address, ChainId } from '@zodiac-os/api-types'
-  import { UUID } from 'crypto'
-
-  export const users: Readonly<
-    Record<
-      string,
-      {
-        id: UUID
-        fullName: string
-        personalSafes: Record<
-          number,
-          { address: Lowercase<Address>; active: boolean }
-        >
-      }
-    >
-  >
-
-  export const vaults: Readonly<
-    Record<
-      string,
-      {
-        workspaceId: UUID
-        workspaceName: string
-        vaults: Readonly<
-          Record<
-            string,
-            {
-              id: UUID
-              label: string
-              address: Lowercase<Address>
-              chain: ChainId
-              threshold: number
-              owners: readonly string[]
-              modules: readonly string[]
-            }
-          >
-        >
-      }
-    >
-  >
-}
+// Augmented by `<cwd>/.zodiac/index.d.ts` (from `pull-org`) with the
+// workspace's users and vaults as literal types. Remains `{}` until
+// `pull-org` has been run; `constellation()` falls back to the wide
+// `CodegenData` shape in that case.
+interface ZodiacGeneratedCodegen {}

@@ -4,12 +4,11 @@ import type { AllowanceSpec } from './types'
 import type { Annotation, Permission, PermissionSet } from 'zodiac-roles-sdk'
 import { createRequire } from 'module'
 import { resolveZodiacDir } from './paths'
-import type * as ZodiacOsCodegen from '.zodiac'
 import { UUID } from 'crypto'
 
 /**
  * A role definition keyed by role name. Permissions are expanded into
- * `{ targets, annotations }` via `processPermissions` at `apply()` time.
+ * `{ targets, annotations }` via `processPermissions` at `push()` time.
  */
 export type RoleDef = {
   members: readonly AddressOrRef[]
@@ -26,36 +25,45 @@ type User = {
   >
 }
 
-type Vault = {
+type Account = {
   id: UUID
   label: string
   address: Lowercase<Address>
   chain: ChainId
-  threshold: number
-  owners: readonly string[]
-  modules: readonly string[]
+  /** True for accounts promoted to a workspace vault. */
+  vault: boolean
 }
 
-type WorkspaceVaults = {
+/**
+ * Accounts grouped by node type within a workspace. Per-type maps keep
+ * bracket-accessor namespaces separate: a SAFE and a ROLES mod sharing a
+ * label don't collide, and `eth.safe[...]` IntelliSense doesn't suggest
+ * ROLES mod labels (and vice versa).
+ */
+type WorkspaceAccounts = {
   workspaceId: UUID
   workspaceName: string
-  vaults: Readonly<Record<string, Vault>>
+  safes: Readonly<Record<string, Account>>
+  rolesMods: Readonly<Record<string, Account>>
+  delays: Readonly<Record<string, Account>>
 }
 
 /** Shape of the codegen data produced by `zodiac-os pull-org`. */
 export type CodegenData = {
   users: Readonly<Record<string, User>>
-  vaults: Readonly<Record<string, WorkspaceVaults>>
+  accounts: Readonly<Record<string, WorkspaceAccounts>>
 }
 
-type GeneratedCodegen = {
-  users: typeof ZodiacOsCodegen.users
-  vaults: typeof ZodiacOsCodegen.vaults
-}
+// If `pull-org` has been run, the consumer's `.zodiac/index.d.ts` augments
+// `ZodiacGeneratedCodegen` with literal `users`/`accounts` shapes. Otherwise
+// the interface is empty and we fall back to the wide `CodegenData`.
+type GeneratedCodegen = ZodiacGeneratedCodegen extends CodegenData
+  ? ZodiacGeneratedCodegen
+  : CodegenData
 
 type ConstellationOpts<C extends CodegenData> = {
-  /** Workspace to scope vaults and roles to. */
-  workspace: keyof C['vaults'] & string
+  /** Workspace to scope accounts and roles to. */
+  workspace: keyof C['accounts'] & string
   /** Human-readable label for this constellation. */
   label: string
   /** Target chain for all nodes in this constellation. */
@@ -69,10 +77,15 @@ type ConstellationInternalOpts<C extends CodegenData> = {
 
 type Prettify<T> = { readonly [K in keyof T]: T[K] } & {}
 
-type WorkspaceVaultEntries<
+type SafeEntries<
   C extends CodegenData,
-  W extends keyof C['vaults'],
-> = C['vaults'][W]['vaults']
+  W extends keyof C['accounts'],
+> = C['accounts'][W]['safes']
+
+type RolesEntries<
+  C extends CodegenData,
+  W extends keyof C['accounts'],
+> = C['accounts'][W]['rolesMods']
 
 type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 
@@ -125,11 +138,12 @@ export type RolesNode = NodeBase &
     multisend?: readonly Address[]
     /** Role definitions configured on this modifier. */
     roles?: Record<string, RoleDef>
-    /** Spending allowances configured on this modifier. */
-    allowances?: readonly AllowanceSpec[]
+    /** Spending allowances configured on this modifier. Either an array or
+     * a Record keyed by name — both forms carry the same allowance specs. */
+    allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
   }>
 
-/** Any complete node that can be passed to `apply()`. */
+/** Any complete node that can be passed to `push()`. */
 export type ConstellationNode = SafeNode | RolesNode
 export type ConstellationNodeInternal = ConstellationNode & {
   _constellation: ConstellationMeta
@@ -149,8 +163,8 @@ type NewSafeProps = {
 }
 
 type NewRolesProps = {
-  /** Deployment nonce for CREATE2 address derivation. Defaults to `0n` when omitted. */
-  nonce?: bigint
+  /** Deployment nonce for CREATE2 address derivation. */
+  nonce: bigint
   /** The safe that this roles modifier controls. Defaults to the new safe with the same label, when one exists. */
   target?: AddressOrRef
   /** The account that calls will be executed from. Defaults to `target` value */
@@ -161,9 +175,41 @@ type NewRolesProps = {
   multisend?: readonly Address[]
   /** Role definitions to configure on this modifier. */
   roles?: Record<string, RoleDef>
-  /** Spending allowances to configure on this modifier. */
-  allowances?: readonly AllowanceSpec[]
+  /** Spending allowances to configure on this modifier. Either an array or
+   * a Record keyed by name — both forms carry the same allowance specs. */
+  allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
 }
+
+type ExistingNodeAccessor<
+  Type extends string,
+  K extends string,
+  E,
+  Ch extends ChainId,
+  NP extends Record<string, any>,
+> = Readonly<Prettify<E & { type: Type; label: K; chain: Ch }>> &
+  (<
+    O extends {
+      [P in Exclude<keyof E & string, 'id' | 'label'>]?: any
+    } & Partial<NP> = {},
+  >(
+    overrides?: {
+      [P in Exclude<keyof E & string, 'id' | 'label'>]?: any
+    } & Partial<NP> &
+      O
+  ) => Readonly<
+    Prettify<
+      Omit<E, keyof O> & O & Partial<NP> & { type: Type; label: K; chain: Ch }
+    >
+  >)
+
+type NewNodeAccessor<
+  Type extends string,
+  Ch extends ChainId,
+  NP extends Record<string, any>,
+> = Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
+  ((
+    props: NP
+  ) => Readonly<Prettify<NP & { type: Type; label: string; chain: Ch }>>)
 
 type EntityAccessor<
   Type extends string,
@@ -171,30 +217,15 @@ type EntityAccessor<
   Ch extends ChainId = ChainId,
   NP extends Record<string, any> = Record<string, any>,
 > = {
-  readonly [K in
-    | (keyof Entries & string)
-    | (string & {})]: K extends keyof Entries & string
-    ? Readonly<Prettify<Entries[K] & { type: Type; label: K; chain: Ch }>> &
-        (<
-          O extends {
-            [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } & Partial<NP> = {},
-        >(
-          overrides?: {
-            [P in Exclude<keyof Entries[K] & string, 'id' | 'label'>]?: any
-          } & Partial<NP> &
-            O
-        ) => Readonly<
-          Prettify<
-            Omit<Entries[K], keyof O> &
-              O &
-              Partial<NP> & { type: Type; label: K; chain: Ch }
-          >
-        >)
-    : Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
-        ((
-          props: NP
-        ) => Readonly<Prettify<NP & { type: Type; label: string; chain: Ch }>>)
+  readonly [K in keyof Entries & string]: ExistingNodeAccessor<
+    Type,
+    K,
+    Entries[K],
+    Ch,
+    NP
+  >
+} & {
+  readonly [key: string]: NewNodeAccessor<Type, Ch, NP>
 }
 
 type UserAccessor<C extends CodegenData, Ch extends number> = {
@@ -204,13 +235,15 @@ type UserAccessor<C extends CodegenData, Ch extends number> = {
 
 type ConstellationResult<
   C extends CodegenData,
-  W extends keyof C['vaults'] = keyof C['vaults'],
+  W extends keyof C['accounts'] = keyof C['accounts'],
   Ch extends ChainId = ChainId,
 > = {
-  /** Access existing safes by label or create new ones with a new label. */
-  safe: EntityAccessor<'SAFE', WorkspaceVaultEntries<C, W>, Ch, NewSafeProps>
-  /** Access existing roles modifiers by label or create new ones with a new label. */
-  roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>, Ch, NewRolesProps>
+  /** Access existing safes by label or create new ones with a new label.
+   * Only SAFE-typed accounts are suggested in IntelliSense. */
+  safe: EntityAccessor<'SAFE', SafeEntries<C, W>, Ch, NewSafeProps>
+  /** Access existing roles modifiers by label or create new ones with a
+   * new label. Only ROLES-typed accounts are suggested in IntelliSense. */
+  roles: EntityAccessor<'ROLES', RolesEntries<C, W>, Ch, NewRolesProps>
   /** Resolve a user's personal safe address on the constellation's chain. */
   user: UserAccessor<C, Ch>
 }
@@ -230,18 +263,19 @@ function loadCodegen(): CodegenData {
 /**
  * Creates a constellation scoped to a workspace and chain.
  *
- * Use bracket access to reference existing vaults or define new nodes:
+ * Use bracket access to reference existing accounts (vaults and other
+ * applied constellation nodes) or define new ones:
  * ```ts
  * const eth = constellation({ workspace: 'GG', label: 'my constellation', chain: 1 })
  *
- * const dao = eth.safe['GG DAO']              // existing vault ref
+ * const dao = eth.safe['GG DAO']              // existing account ref
  * const roles = eth.roles['GG DAO']           // existing roles ref
  * const newSafe = eth.safe['New Safe']({ nonce: 0n, threshold: 2, owners: [...], modules: [...] })
  * ```
  */
 export function constellation<
   const C extends CodegenData = GeneratedCodegen,
-  const W extends keyof C['vaults'] & string = keyof C['vaults'] & string,
+  const W extends keyof C['accounts'] & string = keyof C['accounts'] & string,
   const Ch extends ChainId = ChainId,
 >(
   opts: ConstellationOpts<C> & { workspace: W; chain: Ch },
@@ -249,11 +283,15 @@ export function constellation<
 ): ConstellationResult<C, W, Ch> {
   const codegen: CodegenData = internal?.codegen ?? loadCodegen()
 
-  const ws = codegen.vaults[opts.workspace]
-  const vaultsByLabel: Record<string, Vault> = {}
+  const ws = codegen.accounts[opts.workspace]
+  const safesByLabel: Record<string, Account> = {}
+  const rolesByLabel: Record<string, Account> = {}
   if (ws) {
-    for (const [label, vault] of Object.entries(ws.vaults)) {
-      vaultsByLabel[label] = vault
+    for (const [label, account] of Object.entries(ws.safes)) {
+      safesByLabel[label] = account
+    }
+    for (const [label, account] of Object.entries(ws.rolesMods)) {
+      rolesByLabel[label] = account
     }
   }
 
@@ -263,26 +301,19 @@ export function constellation<
     workspaceId: (ws?.workspaceId ?? '') as UUID,
   }
 
-  const newSafes = new Map<string, Readonly<Record<string, any>>>()
-
   function makeNodeRef(
     data: Record<string, any>
   ): Readonly<Record<string, any>> {
-    const ref: Record<string, any> = Object.freeze({
+    return Object.freeze({
       ...data,
       chain: opts.chain,
       _constellation: meta,
     })
-    if (ref.type === 'SAFE' && typeof ref.label === 'string') {
-      newSafes.set(ref.label, ref)
-    }
-    return ref
   }
 
   function entityAccessor(
     registry: Record<string, Record<string, any>>,
-    type: string,
-    resolveCanonicalSafe?: (name: string) => Record<string, any> | undefined
+    type: string
   ) {
     const cache = new Map<string, Record<string, any>>()
     return new Proxy({} as Record<string, any>, {
@@ -291,33 +322,22 @@ export function constellation<
         const cached = cache.get(name)
         if (cached) return cached
         const existing = registry[name]
-        const fn = (overrides?: Record<string, any>) => {
-          const canonicalSafe =
-            resolveCanonicalSafe && !overrides?.target
-              ? resolveCanonicalSafe(name)
-              : undefined
-          if (canonicalSafe) {
-            return makeNodeRef({
-              type,
-              nonce: 0n,
-              target: canonicalSafe,
-              owner: canonicalSafe,
-              avatar: canonicalSafe,
-              ...overrides,
-              label: name,
-            })
-          }
-          return makeNodeRef({
+        // Bracket-access keys in the generated codegen carry a
+        // ` (0xChecksummed…)` suffix when multiple workspace accounts share
+        // a label. The label sent in the push spec should be the clean
+        // original, so prefer `existing.label` when it's available.
+        const specLabel: string = existing?.label ?? name
+        const fn = (overrides?: Record<string, any>) =>
+          makeNodeRef({
             type,
             ...(existing || {}),
             ...overrides,
-            label: name,
+            label: specLabel,
           })
-        }
         Object.assign(fn, {
           type,
           ...(existing || {}),
-          label: name,
+          label: specLabel,
           chain: opts.chain,
           _constellation: meta,
         })
@@ -346,13 +366,8 @@ export function constellation<
     )
   }
 
-  const safe = entityAccessor(vaultsByLabel, 'SAFE')
-  const roles = entityAccessor(vaultsByLabel, 'ROLES', (name) => {
-    const invoked = newSafes.get(name)
-    if (invoked) return invoked
-    if (name in vaultsByLabel) return safe[name]
-    return undefined
-  })
+  const safe = entityAccessor(safesByLabel, 'SAFE')
+  const roles = entityAccessor(rolesByLabel, 'ROLES')
 
   return {
     safe,

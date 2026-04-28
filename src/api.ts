@@ -4,7 +4,7 @@ import type {
   ResolveConstellationPayload,
   ResolveConstellationResult,
   ApiError as ApiErrorResponse,
-  ListVaultsResult,
+  ListAccountsResult,
   ListUsersResult,
 } from '@zodiac-os/api-types'
 import assert from 'assert'
@@ -74,8 +74,8 @@ export class ApiClient {
     return res.json()
   }
 
-  listVaults(): Promise<ListVaultsResult> {
-    return this.get('vaults')
+  listAccounts(): Promise<ListAccountsResult> {
+    return this.get('accounts')
   }
 
   listUsers(): Promise<ListUsersResult> {

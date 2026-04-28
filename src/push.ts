@@ -12,14 +12,15 @@ import type {
   ConstellationNodeInternal,
   RoleDef,
 } from './constellation'
+import type { AllowanceSpec } from './types'
 
-type ApplyOpts = {
+type PushOpts = {
   /** API client instance. Defaults to a client configured from environment variables. */
   api?: ApiClient
 }
 
 /**
- * Resolves node references and applies the constellation specification via the API.
+ * Resolves node references and pushes the constellation specification to the API.
  *
  *
  * ```ts
@@ -27,12 +28,12 @@ type ApplyOpts = {
  * const dao = eth.safe['GG DAO']
  * const roles = eth.roles['New Roles']({ nonce: 0n, target: dao, owner: dao, avatar: dao })
  *
- * await apply([dao, roles])
+ * await push([dao, roles])
  * ```
  */
-export async function apply(
+export async function push(
   nodes: ConstellationNode[] | { [key: string]: ConstellationNode },
-  opts?: ApplyOpts
+  opts?: PushOpts
 ): Promise<ApplyConstellationResult[]> {
   const api = opts?.api ?? new ApiClient()
   const refs = deriveRefs(nodes)
@@ -128,6 +129,18 @@ async function nodeToSpec(
       spec.roles = await expandRoles(value as Record<string, RoleDef>, refs)
       continue
     }
+    if (
+      node.type === 'ROLES' &&
+      key === 'allowances' &&
+      value != null &&
+      !Array.isArray(value)
+    ) {
+      spec.allowances = resolveRefs(
+        Object.values(value as Record<string, AllowanceSpec>),
+        refs
+      )
+      continue
+    }
     spec[key] = resolveRefs(value, refs)
   }
 
@@ -164,7 +177,7 @@ function resolveRefs(value: unknown, refs: RefsIndex): unknown {
     const ref = refs.byIdentity.get(value) ?? refs.byLabel.get(labelKey(value))
     invariant(
       ref != null,
-      `Node "${value.label}" is referenced not included in the apply() call`
+      `Node "${value.label}" is referenced not included in the push() call`
     )
     return `$${ref}`
   }
