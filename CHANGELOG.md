@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.6.1...v1.7.0) (2026-04-28)
+
+
+### Features
+
+* unified accounts API + push() rename ([#20](https://github.com/gnosisguild/zodiac-os-sdk/issues/20)) ([5280a85](https://github.com/gnosisguild/zodiac-os-sdk/commit/5280a853b8095d5b4fa983671d82e3784823461a))
+
 ## [1.6.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.6.0...v1.6.1) (2026-04-20)
 
 
