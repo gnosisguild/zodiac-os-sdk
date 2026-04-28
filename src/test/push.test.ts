@@ -1,6 +1,6 @@
 import { describe, it, expect, mock } from 'bun:test'
 import { encodeKey } from 'zodiac-roles-sdk'
-import { apply } from '../apply'
+import { push } from '../push'
 import { constellation } from '../constellation'
 import * as codegen from './codegen.mock'
 
@@ -11,7 +11,7 @@ function mockApi() {
   return { api, lastPayload }
 }
 
-describe('apply', () => {
+describe('push', () => {
   function setup() {
     return constellation(
       { workspace: 'GG', label: 'test', chain: 1 },
@@ -30,7 +30,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([dao, roles], { api })
+    await push([dao, roles], { api })
 
     const spec = lastPayload().specification[1]
     expect(spec.target).toBe('$0')
@@ -38,7 +38,7 @@ describe('apply', () => {
     expect(spec.avatar).toBe('$0')
   })
 
-  it('throws when a referenced node is not in the apply list', async () => {
+  it('throws when a referenced node is not in the push list', async () => {
     const eth = setup()
     const dao = eth.safe['GG DAO']
     const roles = eth.roles['New Roles']({
@@ -49,8 +49,8 @@ describe('apply', () => {
     })
 
     const { api } = mockApi()
-    expect(apply([roles], { api })).rejects.toThrow(
-      'Node "GG DAO" is referenced not included in the apply() call'
+    expect(push([roles], { api })).rejects.toThrow(
+      'Node "GG DAO" is referenced not included in the push() call'
     )
   })
 
@@ -60,7 +60,7 @@ describe('apply', () => {
     const treasury = eth.safe['Treasury']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao, treasury], { api })
+    await push([dao, treasury], { api })
 
     const specs = lastPayload().specification
     expect(specs[0].ref).toBe('0')
@@ -73,7 +73,7 @@ describe('apply', () => {
     const treasury = eth.safe['Treasury']
 
     const { api, lastPayload } = mockApi()
-    await apply({ dao, treasury }, { api })
+    await push({ dao, treasury }, { api })
 
     const specs = lastPayload().specification
     expect(specs[0].ref).toBe('dao')
@@ -90,7 +90,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply([newSafe], { api })
+    await push([newSafe], { api })
 
     const spec = lastPayload().specification[0]
     expect(spec.nonce).toBe('42')
@@ -109,7 +109,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply({ dao, roles, newSafe }, { api })
+    await push({ dao, roles, newSafe }, { api })
 
     const spec = lastPayload().specification[2]
     expect(spec.owners).toEqual([
@@ -124,7 +124,7 @@ describe('apply', () => {
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { api })
+    await push([dao], { api })
 
     const spec = lastPayload().specification[0]
     expect(spec._constellation).toBeUndefined()
@@ -138,7 +138,7 @@ describe('apply', () => {
     const dao = eth.safe['GG DAO']
 
     const { api, lastPayload } = mockApi()
-    await apply([dao], { api })
+    await push([dao], { api })
 
     const payload = lastPayload()
     expect(payload.label).toBe('my constellation')
@@ -160,7 +160,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply({ safe, roles }, { api })
+    await push({ safe, roles }, { api })
 
     const specs = lastPayload().specification
     expect(specs[0].modules).toEqual(['$roles'])
@@ -189,7 +189,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply({ safe, roles }, { api })
+    await push({ safe, roles }, { api })
 
     const spec = lastPayload().specification[1]
     expect(spec.allowances).toEqual([
@@ -226,7 +226,7 @@ describe('apply', () => {
     })
 
     const { api, lastPayload } = mockApi()
-    await apply({ safe, roles }, { api })
+    await push({ safe, roles }, { api })
 
     const spec = lastPayload().specification[1]
     expect(spec.allowances).toEqual([
@@ -243,7 +243,7 @@ describe('apply', () => {
 
   it('throws for invalid nodes', async () => {
     const { api } = mockApi()
-    expect(() => apply([{ not: 'a node' } as any], { api })).toThrow(
+    expect(() => push([{ not: 'a node' } as any], { api })).toThrow(
       'unexpected node input'
     )
   })

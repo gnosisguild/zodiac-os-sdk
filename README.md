@@ -63,20 +63,20 @@ const eth = constellation({
 
 ### Referencing existing accounts
 
-Bracket access gives you existing Safes and Roles mods from the selected workspace — both **vault accounts** (manually-promoted entries surfaced in the workspace UI) and any **constellation accounts** previously created by an `apply()`. The codegen records them under the same `accounts` map, marked with a `vault` flag for the subset that are also workspace vaults. Names auto-complete from the codegen output.
+Bracket access gives you existing Safes and Roles mods from the selected workspace — both **vault accounts** (manually-promoted entries surfaced in the workspace UI) and any **constellation accounts** previously created by a `push()`. The codegen records them under the same `accounts` map, marked with a `vault` flag for the subset that are also workspace vaults. Names auto-complete from the codegen output.
 
 ```ts
 // Reference an existing Safe — no invocation needed
 const ggDao = eth.safe['GG DAO']
 
-// Reference the canonical Roles mod for that Safe
-const ggDaoRoles = eth.roles['GG DAO']
+// Reference an existing Roles mod
+const ggDaoRoles = eth.roles['GG DAO Roles']
 
 // Optionally invoke with overrides
 const ggDaoOverridden = eth.safe['GG DAO']({ threshold: 5 })
 ```
 
-> `bun apply` runs `pull-org` first via the `preapply` hook, so re-applying always sees the freshest existing-account values from your org.
+> `bun push` runs `pull-org` first via the `prepush` hook, so re-pushing always sees the freshest existing-account values from your org.
 
 ### Creating new accounts
 
@@ -103,19 +103,6 @@ const newRoles = eth.roles['New Roles']({
 
 When a bracket label matches an existing account from your codegen, all overrides become optional — you pass only the fields you want to change against the live configuration.
 
-### Canonical Roles mods
-
-Every Safe has a canonical Roles mod hosting policies applied through the app. When you use the Safe label on the `roles` accessor, it resolves to that Safe's canonical Roles mod automatically.
-
-```ts
-// Enable roles on an existing Safe in your org
-const daoRoles = eth.roles['GG DAO']({
-  roles: [
-    /* ... */
-  ],
-})
-```
-
 ### Circular references between new nodes
 
 New nodes can reference each other before either has been invoked — use the uninvoked factory as a forward reference:
@@ -135,7 +122,7 @@ const roles = eth.roles['New Roles']({
 })
 ```
 
-References are resolved by label at `apply()` time, so both sides of the cycle must be included in the call.
+References are resolved by label at `push()` time, so both sides of the cycle must be included in the call.
 
 ### Referencing users
 
@@ -145,22 +132,22 @@ References are resolved by label at `apply()` time, so both sides of the cycle m
 const aliceAddress = eth.user['Alice Sample']
 ```
 
-### Applying the constellation
+### Pushing the constellation
 
-The `apply()` function takes all nodes and sends them to the Zodiac OS API. Pass either a named object (keys become refs) or an array:
+The `push()` function takes all nodes and sends them to the Zodiac OS API. Pass either a named object (keys become refs) or an array:
 
 ```ts
-import { apply } from '@zodiac-os/sdk'
+import { push } from '@zodiac-os/sdk'
 
-await apply({ ggDao, ggDaoRoles, newSafe, newRoles })
+await push({ ggDao, ggDaoRoles, newSafe, newRoles })
 ```
 
-All referenced nodes must be included in the `apply()` call.
+All referenced nodes must be included in the `push()` call.
 
-By default, `apply()` creates an API client from the `ZODIAC_API_KEY` environment variable. You can pass a custom client:
+By default, `push()` creates an API client from the `ZODIAC_API_KEY` environment variable. You can pass a custom client:
 
 ```ts
-await apply({ ggDao, newRoles }, { api: new ApiClient({ apiKey: '...' }) })
+await push({ ggDao, newRoles }, { api: new ApiClient({ apiKey: '...' }) })
 ```
 
 ## CLI reference

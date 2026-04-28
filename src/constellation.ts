@@ -8,7 +8,7 @@ import { UUID } from 'crypto'
 
 /**
  * A role definition keyed by role name. Permissions are expanded into
- * `{ targets, annotations }` via `processPermissions` at `apply()` time.
+ * `{ targets, annotations }` via `processPermissions` at `push()` time.
  */
 export type RoleDef = {
   members: readonly AddressOrRef[]
@@ -143,7 +143,7 @@ export type RolesNode = NodeBase &
     allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
   }>
 
-/** Any complete node that can be passed to `apply()`. */
+/** Any complete node that can be passed to `push()`. */
 export type ConstellationNode = SafeNode | RolesNode
 export type ConstellationNodeInternal = ConstellationNode & {
   _constellation: ConstellationMeta
@@ -324,7 +324,7 @@ export function constellation<
         const existing = registry[name]
         // Bracket-access keys in the generated codegen carry a
         // ` (0xChecksummed…)` suffix when multiple workspace accounts share
-        // a label. The label sent in the apply spec should be the clean
+        // a label. The label sent in the push spec should be the clean
         // original, so prefer `existing.label` when it's available.
         const specLabel: string = existing?.label ?? name
         const fn = (overrides?: Record<string, any>) =>
