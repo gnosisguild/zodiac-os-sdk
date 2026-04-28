@@ -125,8 +125,9 @@ export type RolesNode = NodeBase &
     multisend?: readonly Address[]
     /** Role definitions configured on this modifier. */
     roles?: Record<string, RoleDef>
-    /** Spending allowances configured on this modifier. */
-    allowances?: readonly AllowanceSpec[]
+    /** Spending allowances configured on this modifier. Either an array or
+     * a Record keyed by name — both forms carry the same allowance specs. */
+    allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
   }>
 
 /** Any complete node that can be passed to `apply()`. */
@@ -161,8 +162,9 @@ type NewRolesProps = {
   multisend?: readonly Address[]
   /** Role definitions to configure on this modifier. */
   roles?: Record<string, RoleDef>
-  /** Spending allowances to configure on this modifier. */
-  allowances?: readonly AllowanceSpec[]
+  /** Spending allowances to configure on this modifier. Either an array or
+   * a Record keyed by name — both forms carry the same allowance specs. */
+  allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
 }
 
 type EntityAccessor<

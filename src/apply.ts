@@ -12,6 +12,7 @@ import type {
   ConstellationNodeInternal,
   RoleDef,
 } from './constellation'
+import type { AllowanceSpec } from './types'
 
 type ApplyOpts = {
   /** API client instance. Defaults to a client configured from environment variables. */
@@ -126,6 +127,18 @@ async function nodeToSpec(
   for (const [key, value] of Object.entries(rest)) {
     if (node.type === 'ROLES' && key === 'roles' && value != null) {
       spec.roles = await expandRoles(value as Record<string, RoleDef>, refs)
+      continue
+    }
+    if (
+      node.type === 'ROLES' &&
+      key === 'allowances' &&
+      value != null &&
+      !Array.isArray(value)
+    ) {
+      spec.allowances = resolveRefs(
+        Object.values(value as Record<string, AllowanceSpec>),
+        refs
+      )
       continue
     }
     spec[key] = resolveRefs(value, refs)

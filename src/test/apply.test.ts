@@ -1,4 +1,5 @@
 import { describe, it, expect, mock } from 'bun:test'
+import { encodeKey } from 'zodiac-roles-sdk'
 import { apply } from '../apply'
 import { constellation } from '../constellation'
 import * as codegen from './codegen.mock'
@@ -202,6 +203,72 @@ describe('apply', () => {
     expect(specs[1].target).toBe('$safe')
     expect(specs[1].owner).toBe('$safe')
     expect(specs[1].avatar).toBe('$safe')
+  })
+
+  it('accepts Record-form allowances and serializes them as an array', async () => {
+    const eth = setup()
+
+    const usdm_user_payouts = {
+      key: encodeKey('usdm_user_payouts'),
+      refill: 1000n,
+      maxRefill: 1000n,
+      period: 86400n,
+      balance: 1000n,
+      timestamp: 0n,
+    }
+
+    const safe = eth.safe['GG DAO']
+    const roles = eth.roles['GG DAO']({
+      allowances: { usdm_user_payouts },
+    })
+
+    const { api, lastPayload } = mockApi()
+    await apply({ safe, roles }, { api })
+
+    const spec = lastPayload().specification[1]
+    expect(spec.allowances).toEqual([
+      {
+        key: encodeKey('usdm_user_payouts'),
+        refill: '1000',
+        maxRefill: '1000',
+        period: '86400',
+        balance: '1000',
+        timestamp: '0',
+      },
+    ])
+  })
+
+  it('passes array-form allowances through unchanged', async () => {
+    const eth = setup()
+
+    const safe = eth.safe['GG DAO']
+    const roles = eth.roles['GG DAO']({
+      allowances: [
+        {
+          key: encodeKey('usdm_user_payouts'),
+          refill: 1000n,
+          maxRefill: 1000n,
+          period: 86400n,
+          balance: 1000n,
+          timestamp: 0n,
+        },
+      ],
+    })
+
+    const { api, lastPayload } = mockApi()
+    await apply({ safe, roles }, { api })
+
+    const spec = lastPayload().specification[1]
+    expect(spec.allowances).toEqual([
+      {
+        key: encodeKey('usdm_user_payouts'),
+        refill: '1000',
+        maxRefill: '1000',
+        period: '86400',
+        balance: '1000',
+        timestamp: '0',
+      },
+    ])
   })
 
   it('throws for invalid nodes', async () => {
