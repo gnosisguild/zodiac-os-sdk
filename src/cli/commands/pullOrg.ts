@@ -1,6 +1,7 @@
 import type { ResolvedConfig } from '../config'
 import { ApiClient } from '../../api'
 import { invariant } from '@epic-web/invariant'
+import { getAddress } from 'ethers'
 import {
   ModuleKind,
   Project,
@@ -41,59 +42,114 @@ export const pullOrg = async (config: ResolvedConfig) => {
     apiKey: config.apiKey,
   })
 
-  const [users, workspaceVaults] = await Promise.all([
+  const [users, workspaceAccounts] = await Promise.all([
     client.listUsers(),
-    client.listVaults(),
+    client.listAccounts(),
   ])
 
-  const allRawVaults = workspaceVaults.flatMap((ws) => ws.vaults)
-
-  // Skip resolve when there are no vaults (avoids a 404 on the ws-id lookup).
-  let accounts: Awaited<
+  // Fetch fresh on-chain state via `resolveConstellation` for every
+  // account we can resolve:
+  //   - `spec` present → pass the stored apply-time node verbatim
+  //     (deployed nodes match on-chain; undeployed ones derive via
+  //     CREATE2 from the stored nonce + config).
+  //   - `vault: true` with no spec → treat as a pre-existing on-chain
+  //     SAFE (e.g. a workspace vault created outside the
+  //     constellation-as-code flow). The resolver finds it on-chain.
+  //   - `vault: false` with no spec → a constituent of a still-pending
+  //     constellation that's never been deployed. We can't usefully
+  //     resolve it, so skip; the codegen emits minimal fields.
+  const allAccounts = workspaceAccounts.flatMap((ws) => ws.accounts)
+  const resolvableAccounts = allAccounts.filter(
+    (a) => a.spec != null || a.vault,
+  )
+  const resolved = new Map<string, Awaited<
     ReturnType<typeof client.resolveConstellation>
-  >['result'] = []
-  if (allRawVaults.length > 0) {
+  >['result'][number]>()
+  if (resolvableAccounts.length > 0) {
     const response = await client.resolveConstellation(
-      workspaceVaults[0].workspaceId, // any workspace works for the resolve route
+      workspaceAccounts[0].workspaceId, // any workspace works for the resolve route
       {
-        specification: allRawVaults.map((vault) => ({
-          type: 'SAFE',
-          chain: vault.chain,
-          address: vault.address,
-        })),
+        specification: resolvableAccounts.map((account) =>
+          account.spec != null
+            ? account.spec
+            : {
+                type: 'SAFE',
+                chain: account.chain,
+                address: account.address,
+              }
+        ),
       }
     )
     invariant(
-      response?.result?.length === allRawVaults.length,
-      `resolveConstellation returned ${response?.result?.length ?? 0} accounts for ${allRawVaults.length} vaults`
+      response?.result?.length === resolvableAccounts.length,
+      `resolveConstellation returned ${response?.result?.length ?? 0} accounts for ${resolvableAccounts.length} accounts`
     )
-    accounts = response.result
+    resolvableAccounts.forEach((account, i) => {
+      resolved.set(account.id, response.result[i])
+    })
   }
 
-  let accountIndex = 0
-  const vaultsRecord: Record<string, unknown> = {}
-  for (const ws of workspaceVaults) {
-    const wsVaults: Record<string, unknown> = {}
-    for (const vault of ws.vaults) {
-      const account = accounts[accountIndex++]
-      invariant(
-        account.type === 'SAFE',
-        `Expected SAFE account for vault ${vault.id}`
-      )
-      wsVaults[vault.label] = {
-        id: vault.id,
-        label: vault.label,
+  // Group accounts by type into separate bracket-access namespaces:
+  // `safes`, `rolesMods`, `delays`. This way `eth.safe[...]`
+  // IntelliSense only suggests SAFE labels, and the label-collision
+  // suffix only kicks in when two accounts **of the same type** share
+  // a label.
+  const accountsRecord: Record<string, unknown> = {}
+  for (const ws of workspaceAccounts) {
+    const safes: Record<string, unknown> = {}
+    const rolesMods: Record<string, unknown> = {}
+    const delays: Record<string, unknown> = {}
+
+    const bucketsByType = {
+      SAFE: safes,
+      ROLES: rolesMods,
+      DELAY: delays,
+    } as const
+
+    type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
+    const isNodeType = (type: string): type is NodeType =>
+      type === 'SAFE' || type === 'ROLES' || type === 'DELAY'
+
+    // Count labels per type so we only suffix within-type collisions.
+    const labelCountByType: Record<NodeType, Map<string, number>> = {
+      SAFE: new Map(),
+      ROLES: new Map(),
+      DELAY: new Map(),
+    }
+    for (const account of ws.accounts) {
+      if (!isNodeType(account.type)) continue
+      const counts = labelCountByType[account.type]
+      counts.set(account.label, (counts.get(account.label) ?? 0) + 1)
+    }
+
+    for (const account of ws.accounts) {
+      if (!isNodeType(account.type)) continue
+      const onChain = resolved.get(account.id)
+      const counts = labelCountByType[account.type]
+      const key =
+        (counts.get(account.label) ?? 0) > 1
+          ? `${account.label} (${getAddress(account.address)})`
+          : account.label
+      bucketsByType[account.type][key] = {
+        id: account.id,
+        label: account.label,
         address: account.address,
-        chain: vault.chain,
-        threshold: account.threshold,
-        owners: [...account.owners],
-        modules: [...account.modules],
+        chain: account.chain,
+        vault: account.vault,
+        ...(onChain?.type === 'SAFE' && {
+          threshold: onChain.threshold,
+          owners: [...onChain.owners],
+          modules: [...onChain.modules],
+        }),
       }
     }
-    vaultsRecord[ws.workspaceName] = {
+
+    accountsRecord[ws.workspaceName] = {
       workspaceId: ws.workspaceId,
       workspaceName: ws.workspaceName,
-      vaults: wsVaults,
+      safes,
+      rolesMods,
+      delays,
     }
   }
 
@@ -162,8 +218,8 @@ export const pullOrg = async (config: ResolvedConfig) => {
     declarationKind: VariableDeclarationKind.Const,
     declarations: [
       {
-        name: 'vaults',
-        initializer: `${toLiteral(vaultsRecord)} as const`,
+        name: 'accounts',
+        initializer: `${toLiteral(accountsRecord)} as const`,
       },
     ],
   })
@@ -181,7 +237,7 @@ export const pullOrg = async (config: ResolvedConfig) => {
 declare global {
     interface ZodiacGeneratedCodegen {
         users: typeof users;
-        vaults: typeof vaults;
+        accounts: typeof accounts;
     }
 }
 `

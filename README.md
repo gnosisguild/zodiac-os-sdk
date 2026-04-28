@@ -39,7 +39,7 @@ export default defineConfig({
 zodiac-os pull
 ```
 
-This generates typed data in `.zodiac/` at your project root with your org's users and vaults. Add `.zodiac/` to your `.gitignore`.
+This generates typed data in `.zodiac/` at your project root with your org's users and accounts (workspace vaults plus accounts that have been applied via a constellation). Add `.zodiac/` to your `.gitignore`.
 
 ## Constellation API
 
@@ -61,9 +61,9 @@ const eth = constellation({
 })
 ```
 
-### Referencing existing vaults
+### Referencing existing accounts
 
-Bracket access gives you existing Safes and Roles mods from the selected workspace. Names auto-complete from the codegen output.
+Bracket access gives you existing Safes and Roles mods from the selected workspace — both **vault accounts** (manually-promoted entries surfaced in the workspace UI) and any **constellation accounts** previously created by an `apply()`. The codegen records them under the same `accounts` map, marked with a `vault` flag for the subset that are also workspace vaults. Names auto-complete from the codegen output.
 
 ```ts
 // Reference an existing Safe — no invocation needed
@@ -75,6 +75,8 @@ const ggDaoRoles = eth.roles['GG DAO']
 // Optionally invoke with overrides
 const ggDaoOverridden = eth.safe['GG DAO']({ threshold: 5 })
 ```
+
+> `bun apply` runs `pull-org` first via the `preapply` hook, so re-applying always sees the freshest existing-account values from your org.
 
 ### Creating new accounts
 

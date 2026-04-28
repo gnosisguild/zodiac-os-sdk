@@ -25,38 +25,45 @@ type User = {
   >
 }
 
-type Vault = {
+type Account = {
   id: UUID
   label: string
   address: Lowercase<Address>
   chain: ChainId
-  threshold: number
-  owners: readonly string[]
-  modules: readonly string[]
+  /** True for accounts promoted to a workspace vault. */
+  vault: boolean
 }
 
-type WorkspaceVaults = {
+/**
+ * Accounts grouped by node type within a workspace. Per-type maps keep
+ * bracket-accessor namespaces separate: a SAFE and a ROLES mod sharing a
+ * label don't collide, and `eth.safe[...]` IntelliSense doesn't suggest
+ * ROLES mod labels (and vice versa).
+ */
+type WorkspaceAccounts = {
   workspaceId: UUID
   workspaceName: string
-  vaults: Readonly<Record<string, Vault>>
+  safes: Readonly<Record<string, Account>>
+  rolesMods: Readonly<Record<string, Account>>
+  delays: Readonly<Record<string, Account>>
 }
 
 /** Shape of the codegen data produced by `zodiac-os pull-org`. */
 export type CodegenData = {
   users: Readonly<Record<string, User>>
-  vaults: Readonly<Record<string, WorkspaceVaults>>
+  accounts: Readonly<Record<string, WorkspaceAccounts>>
 }
 
 // If `pull-org` has been run, the consumer's `.zodiac/index.d.ts` augments
-// `ZodiacGeneratedCodegen` with literal `users`/`vaults` shapes. Otherwise
+// `ZodiacGeneratedCodegen` with literal `users`/`accounts` shapes. Otherwise
 // the interface is empty and we fall back to the wide `CodegenData`.
 type GeneratedCodegen = ZodiacGeneratedCodegen extends CodegenData
   ? ZodiacGeneratedCodegen
   : CodegenData
 
 type ConstellationOpts<C extends CodegenData> = {
-  /** Workspace to scope vaults and roles to. */
-  workspace: keyof C['vaults'] & string
+  /** Workspace to scope accounts and roles to. */
+  workspace: keyof C['accounts'] & string
   /** Human-readable label for this constellation. */
   label: string
   /** Target chain for all nodes in this constellation. */
@@ -70,10 +77,19 @@ type ConstellationInternalOpts<C extends CodegenData> = {
 
 type Prettify<T> = { readonly [K in keyof T]: T[K] } & {}
 
-type WorkspaceVaultEntries<
+type SafeEntries<
   C extends CodegenData,
-  W extends keyof C['vaults'],
-> = C['vaults'][W]['vaults']
+  W extends keyof C['accounts'],
+> = C['accounts'][W]['safes']
+
+/** `eth.roles[...]` suggests both ROLES-mod labels and SAFE labels — the
+ * runtime resolves a bracket reference to a SAFE label via the canonical
+ * roles-mod wiring (same address derivation as the SAFE's on-chain roles
+ * modifier). */
+type RolesEntries<
+  C extends CodegenData,
+  W extends keyof C['accounts'],
+> = C['accounts'][W]['rolesMods'] & C['accounts'][W]['safes']
 
 type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 
@@ -223,13 +239,16 @@ type UserAccessor<C extends CodegenData, Ch extends number> = {
 
 type ConstellationResult<
   C extends CodegenData,
-  W extends keyof C['vaults'] = keyof C['vaults'],
+  W extends keyof C['accounts'] = keyof C['accounts'],
   Ch extends ChainId = ChainId,
 > = {
-  /** Access existing safes by label or create new ones with a new label. */
-  safe: EntityAccessor<'SAFE', WorkspaceVaultEntries<C, W>, Ch, NewSafeProps>
-  /** Access existing roles modifiers by label or create new ones with a new label. */
-  roles: EntityAccessor<'ROLES', WorkspaceVaultEntries<C, W>, Ch, NewRolesProps>
+  /** Access existing safes by label or create new ones with a new label.
+   * Only SAFE-typed accounts are suggested in IntelliSense. */
+  safe: EntityAccessor<'SAFE', SafeEntries<C, W>, Ch, NewSafeProps>
+  /** Access existing roles modifiers by label or create new ones with a
+   * new label. Both ROLES-typed and SAFE-typed labels are suggested;
+   * picking a SAFE label wires this mod to that safe canonically. */
+  roles: EntityAccessor<'ROLES', RolesEntries<C, W>, Ch, NewRolesProps>
   /** Resolve a user's personal safe address on the constellation's chain. */
   user: UserAccessor<C, Ch>
 }
@@ -249,18 +268,19 @@ function loadCodegen(): CodegenData {
 /**
  * Creates a constellation scoped to a workspace and chain.
  *
- * Use bracket access to reference existing vaults or define new nodes:
+ * Use bracket access to reference existing accounts (vaults and other
+ * applied constellation nodes) or define new ones:
  * ```ts
  * const eth = constellation({ workspace: 'GG', label: 'my constellation', chain: 1 })
  *
- * const dao = eth.safe['GG DAO']              // existing vault ref
+ * const dao = eth.safe['GG DAO']              // existing account ref
  * const roles = eth.roles['GG DAO']           // existing roles ref
  * const newSafe = eth.safe['New Safe']({ nonce: 0n, threshold: 2, owners: [...], modules: [...] })
  * ```
  */
 export function constellation<
   const C extends CodegenData = GeneratedCodegen,
-  const W extends keyof C['vaults'] & string = keyof C['vaults'] & string,
+  const W extends keyof C['accounts'] & string = keyof C['accounts'] & string,
   const Ch extends ChainId = ChainId,
 >(
   opts: ConstellationOpts<C> & { workspace: W; chain: Ch },
@@ -268,11 +288,15 @@ export function constellation<
 ): ConstellationResult<C, W, Ch> {
   const codegen: CodegenData = internal?.codegen ?? loadCodegen()
 
-  const ws = codegen.vaults[opts.workspace]
-  const vaultsByLabel: Record<string, Vault> = {}
+  const ws = codegen.accounts[opts.workspace]
+  const safesByLabel: Record<string, Account> = {}
+  const rolesByLabel: Record<string, Account> = {}
   if (ws) {
-    for (const [label, vault] of Object.entries(ws.vaults)) {
-      vaultsByLabel[label] = vault
+    for (const [label, account] of Object.entries(ws.safes)) {
+      safesByLabel[label] = account
+    }
+    for (const [label, account] of Object.entries(ws.rolesMods)) {
+      rolesByLabel[label] = account
     }
   }
 
@@ -310,6 +334,11 @@ export function constellation<
         const cached = cache.get(name)
         if (cached) return cached
         const existing = registry[name]
+        // Bracket-access keys in the generated codegen carry a
+        // ` (0xChecksummed…)` suffix when multiple workspace accounts share
+        // a label. The label sent in the apply spec should be the clean
+        // original, so prefer `existing.label` when it's available.
+        const specLabel: string = existing?.label ?? name
         const fn = (overrides?: Record<string, any>) => {
           const canonicalSafe =
             resolveCanonicalSafe && !overrides?.target
@@ -322,20 +351,20 @@ export function constellation<
               owner: canonicalSafe,
               avatar: canonicalSafe,
               ...overrides,
-              label: name,
+              label: specLabel,
             })
           }
           return makeNodeRef({
             type,
             ...(existing || {}),
             ...overrides,
-            label: name,
+            label: specLabel,
           })
         }
         Object.assign(fn, {
           type,
           ...(existing || {}),
-          label: name,
+          label: specLabel,
           chain: opts.chain,
           _constellation: meta,
         })
@@ -364,11 +393,19 @@ export function constellation<
     )
   }
 
-  const safe = entityAccessor(vaultsByLabel, 'SAFE')
-  const roles = entityAccessor(vaultsByLabel, 'ROLES', (name) => {
+  const safe = entityAccessor(safesByLabel, 'SAFE')
+  // Roles accessor sees both existing ROLES mods and SAFE labels. If the
+  // user brackets a SAFE label, `resolveCanonicalSafe` wires the ROLES
+  // mod to that safe (canonical deployment derives the same address the
+  // existing roles mod would have).
+  const rolesRegistry: Record<string, Record<string, any>> = {
+    ...rolesByLabel,
+    ...safesByLabel,
+  }
+  const roles = entityAccessor(rolesRegistry, 'ROLES', (name) => {
     const invoked = newSafes.get(name)
     if (invoked) return invoked
-    if (name in vaultsByLabel) return safe[name]
+    if (name in safesByLabel) return safe[name]
     return undefined
   })
 
