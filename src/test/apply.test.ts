@@ -80,6 +80,21 @@ describe('apply', () => {
     expect(specs[1].ref).toBe('treasury')
   })
 
+  it('defaults nonce to "0" for new safes when omitted', async () => {
+    const eth = setup()
+    const newSafe = eth.safe['New Safe']({
+      threshold: 1,
+      owners: [],
+      modules: [],
+    })
+
+    const { api, lastPayload } = mockApi()
+    await apply([newSafe], { api })
+
+    const spec = lastPayload().specification[0]
+    expect(spec.nonce).toBe('0')
+  })
+
   it('converts bigint nonce to string', async () => {
     const eth = setup()
     const newSafe = eth.safe['New Safe']({

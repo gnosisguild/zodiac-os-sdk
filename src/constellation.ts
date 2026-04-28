@@ -137,8 +137,8 @@ export type ConstellationNodeInternal = ConstellationNode & {
 }
 
 type NewSafeProps = {
-  /** Deployment nonce for CREATE2 address derivation. */
-  nonce: bigint
+  /** Deployment nonce for CREATE2 address derivation. Defaults to `0n` when omitted. */
+  nonce?: bigint
   /** Number of owner signatures required to execute a transaction. */
   threshold: number
   /** Safe owner addresses or node references. */
@@ -311,7 +311,7 @@ export function constellation<
           }
           return makeNodeRef({
             type,
-            ...(existing || {}),
+            ...(existing || { nonce: 0n }),
             ...overrides,
             label: name,
           })
