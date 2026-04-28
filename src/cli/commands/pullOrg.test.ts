@@ -27,7 +27,6 @@ const mockAccounts = [
         label: 'Treasury',
         chain: 1,
         address: '0xaaaa00000000000000000000000000000000aaaa',
-        canonicalRolesAddress: '0x0000000000000000000000000000000000000000',
         vault: true,
       },
     ],

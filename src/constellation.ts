@@ -82,14 +82,10 @@ type SafeEntries<
   W extends keyof C['accounts'],
 > = C['accounts'][W]['safes']
 
-/** `eth.roles[...]` suggests both ROLES-mod labels and SAFE labels — the
- * runtime resolves a bracket reference to a SAFE label via the canonical
- * roles-mod wiring (same address derivation as the SAFE's on-chain roles
- * modifier). */
 type RolesEntries<
   C extends CodegenData,
   W extends keyof C['accounts'],
-> = C['accounts'][W]['rolesMods'] & C['accounts'][W]['safes']
+> = C['accounts'][W]['rolesMods']
 
 type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 
@@ -246,8 +242,7 @@ type ConstellationResult<
    * Only SAFE-typed accounts are suggested in IntelliSense. */
   safe: EntityAccessor<'SAFE', SafeEntries<C, W>, Ch, NewSafeProps>
   /** Access existing roles modifiers by label or create new ones with a
-   * new label. Both ROLES-typed and SAFE-typed labels are suggested;
-   * picking a SAFE label wires this mod to that safe canonically. */
+   * new label. Only ROLES-typed accounts are suggested in IntelliSense. */
   roles: EntityAccessor<'ROLES', RolesEntries<C, W>, Ch, NewRolesProps>
   /** Resolve a user's personal safe address on the constellation's chain. */
   user: UserAccessor<C, Ch>
@@ -306,26 +301,19 @@ export function constellation<
     workspaceId: (ws?.workspaceId ?? '') as UUID,
   }
 
-  const newSafes = new Map<string, Readonly<Record<string, any>>>()
-
   function makeNodeRef(
     data: Record<string, any>
   ): Readonly<Record<string, any>> {
-    const ref: Record<string, any> = Object.freeze({
+    return Object.freeze({
       ...data,
       chain: opts.chain,
       _constellation: meta,
     })
-    if (ref.type === 'SAFE' && typeof ref.label === 'string') {
-      newSafes.set(ref.label, ref)
-    }
-    return ref
   }
 
   function entityAccessor(
     registry: Record<string, Record<string, any>>,
-    type: string,
-    resolveCanonicalSafe?: (name: string) => Record<string, any> | undefined
+    type: string
   ) {
     const cache = new Map<string, Record<string, any>>()
     return new Proxy({} as Record<string, any>, {
@@ -339,28 +327,13 @@ export function constellation<
         // a label. The label sent in the apply spec should be the clean
         // original, so prefer `existing.label` when it's available.
         const specLabel: string = existing?.label ?? name
-        const fn = (overrides?: Record<string, any>) => {
-          const canonicalSafe =
-            resolveCanonicalSafe && !overrides?.target
-              ? resolveCanonicalSafe(name)
-              : undefined
-          if (canonicalSafe) {
-            return makeNodeRef({
-              type,
-              target: canonicalSafe,
-              owner: canonicalSafe,
-              avatar: canonicalSafe,
-              ...overrides,
-              label: specLabel,
-            })
-          }
-          return makeNodeRef({
+        const fn = (overrides?: Record<string, any>) =>
+          makeNodeRef({
             type,
             ...(existing || {}),
             ...overrides,
             label: specLabel,
           })
-        }
         Object.assign(fn, {
           type,
           ...(existing || {}),
@@ -394,20 +367,7 @@ export function constellation<
   }
 
   const safe = entityAccessor(safesByLabel, 'SAFE')
-  // Roles accessor sees both existing ROLES mods and SAFE labels. If the
-  // user brackets a SAFE label, `resolveCanonicalSafe` wires the ROLES
-  // mod to that safe (canonical deployment derives the same address the
-  // existing roles mod would have).
-  const rolesRegistry: Record<string, Record<string, any>> = {
-    ...rolesByLabel,
-    ...safesByLabel,
-  }
-  const roles = entityAccessor(rolesRegistry, 'ROLES', (name) => {
-    const invoked = newSafes.get(name)
-    if (invoked) return invoked
-    if (name in safesByLabel) return safe[name]
-    return undefined
-  })
+  const roles = entityAccessor(rolesByLabel, 'ROLES')
 
   return {
     safe,

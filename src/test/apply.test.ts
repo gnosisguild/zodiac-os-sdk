@@ -167,45 +167,6 @@ describe('apply', () => {
     expect(specs[1].target).toBe('$safe')
   })
 
-  it('resolves canonical roles mod linked to a new safe', async () => {
-    const eth = setup()
-
-    const safe = eth.safe['New Safe']({
-      nonce: 0n,
-      threshold: 1,
-      owners: [],
-    })
-    const roles = eth.roles['New Safe']({
-      nonce: 0n,
-      roles: {},
-    })
-
-    const { api, lastPayload } = mockApi()
-    await apply({ safe, roles }, { api })
-
-    const specs = lastPayload().specification
-    expect(specs[1].target).toBe('$safe')
-    expect(specs[1].owner).toBe('$safe')
-    expect(specs[1].avatar).toBe('$safe')
-  })
-
-  it('resolves canonical roles mod linked to an existing safe', async () => {
-    const eth = setup()
-
-    const safe = eth.safe['GG DAO']
-    const roles = eth.roles['GG DAO']({
-      roles: {},
-    })
-
-    const { api, lastPayload } = mockApi()
-    await apply({ safe, roles }, { api })
-
-    const specs = lastPayload().specification
-    expect(specs[1].target).toBe('$safe')
-    expect(specs[1].owner).toBe('$safe')
-    expect(specs[1].avatar).toBe('$safe')
-  })
-
   it('accepts Record-form allowances and serializes them as an array', async () => {
     const eth = setup()
 
@@ -220,6 +181,10 @@ describe('apply', () => {
 
     const safe = eth.safe['GG DAO']
     const roles = eth.roles['GG DAO']({
+      nonce: 0n,
+      owner: safe,
+      target: safe,
+      avatar: safe,
       allowances: { usdm_user_payouts },
     })
 
@@ -244,6 +209,10 @@ describe('apply', () => {
 
     const safe = eth.safe['GG DAO']
     const roles = eth.roles['GG DAO']({
+      nonce: 0n,
+      owner: safe,
+      target: safe,
+      avatar: safe,
       allowances: [
         {
           key: encodeKey('usdm_user_payouts'),
