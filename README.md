@@ -36,7 +36,7 @@ export default defineConfig({
 
 ```bash
 # Pull everything (org data + contract ABIs)
-zodiac-os pull
+zodiac pull
 ```
 
 This generates typed data in `.zodiac/` at your project root with your org's users and accounts (workspace vaults plus accounts that have been applied via a constellation). Add `.zodiac/` to your `.gitignore`.
@@ -153,9 +153,9 @@ await push({ ggDao, newRoles }, { api: new ApiClient({ apiKey: '...' }) })
 ## CLI reference
 
 ```
-Usage: zodiac-os [options] [command]
+Usage: zodiac [options] [command]
 
-Zodiac OS SDK CLI – pull org data and contract ABIs
+Zodiac SDK CLI – pull org data and contract ABIs
 
 Options:
   -V, --version        output the version number

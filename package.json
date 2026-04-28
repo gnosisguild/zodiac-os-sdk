@@ -31,7 +31,7 @@
     "LICENSE"
   ],
   "bin": {
-    "zodiac-os": "./dist/cli.mjs"
+    "zodiac": "./dist/cli.mjs"
   },
   "scripts": {
     "clean": "rimraf dist",

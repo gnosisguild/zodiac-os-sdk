@@ -1,6 +1,6 @@
 // Ambient fallbacks. Script file (no imports / exports), so top-level
 // interface declarations are implicitly global. Consumers augment these
-// via files generated into `<cwd>/.zodiac/` by `zodiac-os pull-org` /
+// via files generated into `<cwd>/.zodiac/` by `zodiac pull-org` /
 // `pull-contracts`.
 
 // Augmented by `<cwd>/.zodiac/allow.d.ts` (from `pull-contracts`) with

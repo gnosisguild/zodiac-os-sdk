@@ -45,7 +45,7 @@ function missingAbiProxy(node: ContractNode) {
   const explain = () => {
     throw new Error(
       `ABI missing for ${node.chain}.${node.segments.join('.')} ` +
-        `(${node.address}). Run \`zodiac-os pull-contracts\` to fetch it, or ` +
+        `(${node.address}). Run \`zodiac pull-contracts\` to fetch it, or ` +
         `paste the ABI JSON manually at <abisDir>/${node.chain}/${node.segments.join('/')}.json`
     )
   }

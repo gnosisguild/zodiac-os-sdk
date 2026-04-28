@@ -7,8 +7,8 @@ export const run = async (argv: string[] = process.argv) => {
   const program = new Command()
 
   program
-    .name('zodiac-os')
-    .description('Zodiac OS SDK CLI – pull org data and contract ABIs')
+    .name('zodiac')
+    .description('Zodiac SDK CLI – pull org data and contract ABIs')
     .version('1.0.0')
     .option(
       '-c, --config <path>',
