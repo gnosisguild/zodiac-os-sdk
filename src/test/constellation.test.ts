@@ -28,9 +28,7 @@ describe('constellation API', () => {
       const eth = setup()
       const treasury = eth.safe['Treasury']
       expect(treasury.label).toBe('Treasury')
-      expect(treasury.address).toBe(
-        codegen.accounts.GG.safes.Treasury.address
-      )
+      expect(treasury.address).toBe(codegen.accounts.GG.safes.Treasury.address)
     })
 
     it('returns a node ref with existing properties merged with overrides', () => {
@@ -38,9 +36,7 @@ describe('constellation API', () => {
       const ggDao = eth.safe['GG DAO']({ threshold: 5 })
 
       expect(ggDao.label).toBe('GG DAO')
-      expect(ggDao.address).toBe(
-        codegen.accounts.GG.safes['GG DAO'].address
-      )
+      expect(ggDao.address).toBe(codegen.accounts.GG.safes['GG DAO'].address)
       expect(ggDao.threshold).toBe(5)
       expect(ggDao.type).toBe('SAFE')
     })

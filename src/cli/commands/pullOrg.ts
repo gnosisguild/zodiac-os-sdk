@@ -60,19 +60,25 @@ export const pullOrg = async (config: ResolvedConfig) => {
   //     resolve it, so skip; the codegen emits minimal fields.
   const allAccounts = workspaceAccounts.flatMap((ws) => ws.accounts)
   const resolvableAccounts = allAccounts.filter(
-    (a) => a.spec != null || a.vault,
+    (a) => a.spec != null || a.vault
   )
-  const resolved = new Map<string, Awaited<
-    ReturnType<typeof client.resolveConstellation>
-  >['result'][number]>()
+  const resolved = new Map<
+    string,
+    Awaited<ReturnType<typeof client.resolveConstellation>>['result'][number]
+  >()
   if (resolvableAccounts.length > 0) {
     const response = await client.resolveConstellation(
       workspaceAccounts[0].workspaceId, // any workspace works for the resolve route
       {
-        specification: resolvableAccounts.map((account) =>
+        specification: resolvableAccounts.map((account, i) =>
           account.spec != null
             ? account.spec
             : {
+                // Synthesize a ref for vault-fallback entries (no stored
+                // spec). The /resolve payload requires a ref on every
+                // entry; the value isn't used downstream beyond echoing
+                // back into the response, so a positional id is fine.
+                ref: `vault_${i}` as Lowercase<string>,
                 type: 'SAFE',
                 chain: account.chain,
                 address: account.address,
