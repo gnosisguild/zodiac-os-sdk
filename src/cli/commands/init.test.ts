@@ -45,6 +45,7 @@ describe('init', () => {
 
     const envContents = readFileSync(join(tmpDir, '.env'), 'utf8')
     expect(envContents).toContain('ZODIAC_API_KEY=zodiac_test-key-1')
+    expect(envContents).toContain(`ZODIAC_API_URL=${APP_URL}/api/v1`)
   })
 
   it('rejects callbacks from the wrong origin', async () => {
@@ -116,7 +117,7 @@ describe('init', () => {
     mkdirSync(tmpDir, { recursive: true })
     writeFileSync(
       join(tmpDir, '.env'),
-      'OTHER_VAR=foo\nZODIAC_API_KEY=zodiac_old\nMORE=bar\n',
+      'OTHER_VAR=foo\nZODIAC_API_KEY=zodiac_old\nZODIAC_API_URL=https://stale.example/api/v1\nMORE=bar\n',
       'utf8'
     )
 
@@ -136,7 +137,9 @@ describe('init', () => {
     expect(envContents).toContain('OTHER_VAR=foo')
     expect(envContents).toContain('MORE=bar')
     expect(envContents).toContain('ZODIAC_API_KEY=zodiac_new')
+    expect(envContents).toContain(`ZODIAC_API_URL=${APP_URL}/api/v1`)
     expect(envContents).not.toContain('zodiac_old')
+    expect(envContents).not.toContain('stale.example')
   })
 
   it('echoes Private Network Access preflight headers when requested', async () => {

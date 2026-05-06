@@ -1,8 +1,13 @@
 import { Command } from 'commander'
+import { config as loadDotenv } from 'dotenv'
 import { init } from './commands/init'
 import { loadConfig } from './config'
 import { pullOrg } from './commands/pullOrg'
 import { pullContracts } from './commands/pullContracts'
+import { ensureApiKey } from './ensureApiKey'
+
+// Load `.env` from the current working directory before reading any env vars.
+loadDotenv({ quiet: true })
 
 export const run = async (argv: string[] = process.argv) => {
   const program = new Command()
@@ -34,6 +39,7 @@ export const run = async (argv: string[] = process.argv) => {
     .command('pull-org')
     .description('Fetch Zodiac users and accounts, generate TypeScript types')
     .action(async (_opts, cmd) => {
+      await ensureApiKey()
       const config = await loadConfig(cmd.optsWithGlobals().config)
       await pullOrg(config)
     })
@@ -42,6 +48,7 @@ export const run = async (argv: string[] = process.argv) => {
     .command('pull-contracts')
     .description('Fetch contract ABIs, generate typed permissions kit')
     .action(async (_opts, cmd) => {
+      await ensureApiKey()
       const config = await loadConfig(cmd.optsWithGlobals().config)
       await pullContracts(config)
     })
@@ -50,6 +57,7 @@ export const run = async (argv: string[] = process.argv) => {
     .command('pull')
     .description('Fetch Zodiac org and contracts ABI, generate SDK functions')
     .action(async (_opts, cmd) => {
+      await ensureApiKey()
       const config = await loadConfig(cmd.optsWithGlobals().config)
       await Promise.all([pullOrg(config), pullContracts(config)])
     })

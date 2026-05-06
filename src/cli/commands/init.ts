@@ -17,7 +17,7 @@ type InitOptions = {
   appUrl?: string
 }
 
-export const init = async (options: InitOptions = {}): Promise<void> => {
+export const init = async (options: InitOptions = {}): Promise<string> => {
   const rootDir = options.rootDir ?? process.cwd()
   const appUrl = (
     options.appUrl ??
@@ -50,13 +50,16 @@ export const init = async (options: InitOptions = {}): Promise<void> => {
   try {
     key = await waitForKey(CALLBACK_TIMEOUT_MS)
   } finally {
-    close()
+    await close()
   }
 
   const envPath = join(rootDir, '.env')
-  writeApiKeyToEnv(envPath, key)
+  const apiUrl = `${appUrl}/api/v1`
+  writeEnv(envPath, { ZODIAC_API_KEY: key, ZODIAC_API_URL: apiUrl })
 
-  console.log(`✓ API key written to ${envPath}`)
+  console.log(`✅ API key written to ${envPath}`)
+
+  return key
 }
 
 type StartServerOptions = {
@@ -67,7 +70,7 @@ type StartServerOptions = {
 type StartServerResult = {
   port: number
   waitForKey: (timeoutMs: number) => Promise<string>
-  close: () => void
+  close: () => Promise<void>
 }
 
 const startCallbackServer = async ({
@@ -132,9 +135,13 @@ const startCallbackServer = async ({
           res.end()
           return
         }
+        // Force the connection to close after the response so the browser
+        // doesn't keep waiting on a keep-alive socket once the CLI exits.
+        // Resolve only after 'finish' (response handed to the OS) so the
+        // bytes can flush before the process tears down.
+        res.setHeader('Connection', 'close')
         res.statusCode = 200
-        res.end()
-        resolveKey(body.key)
+        res.end(() => resolveKey(body.key))
       } catch {
         res.statusCode = 400
         res.end()
@@ -150,7 +157,10 @@ const startCallbackServer = async ({
   }
   const port = address.port
 
-  const close = () => server.close()
+  const close = (): Promise<void> =>
+    new Promise<void>((resolve) => {
+      server.close(() => resolve())
+    })
 
   const waitForKey = (timeoutMs: number) =>
     Promise.race<string>([
@@ -166,25 +176,27 @@ const startCallbackServer = async ({
   return { port, waitForKey, close }
 }
 
-const ENV_KEY = 'ZODIAC_API_KEY'
+const writeEnv = (envPath: string, vars: Record<string, string>): void => {
+  let contents = existsSync(envPath) ? readFileSync(envPath, 'utf8') : ''
 
-const writeApiKeyToEnv = (envPath: string, key: string): void => {
-  const existing = existsSync(envPath) ? readFileSync(envPath, 'utf8') : ''
-
-  const line = `${ENV_KEY}=${key}`
-  const lines = existing.split(/\r?\n/)
-  const idx = lines.findIndex((l) => new RegExp(`^\\s*${ENV_KEY}\\s*=`).test(l))
-
-  let next: string
-  if (idx >= 0) {
-    lines[idx] = line
-    next = lines.join('\n')
-  } else {
-    next =
-      existing.length === 0 || existing.endsWith('\n')
-        ? `${existing}${line}\n`
-        : `${existing}\n${line}\n`
+  for (const [key, value] of Object.entries(vars)) {
+    contents = upsertEnvLine(contents, key, value)
   }
 
-  writeFileSync(envPath, next, 'utf8')
+  writeFileSync(envPath, contents, 'utf8')
+}
+
+const upsertEnvLine = (contents: string, key: string, value: string): string => {
+  const line = `${key}=${value}`
+  const lines = contents.split(/\r?\n/)
+  const idx = lines.findIndex((l) => new RegExp(`^\\s*${key}\\s*=`).test(l))
+
+  if (idx >= 0) {
+    lines[idx] = line
+    return lines.join('\n')
+  }
+
+  return contents.length === 0 || contents.endsWith('\n')
+    ? `${contents}${line}\n`
+    : `${contents}\n${line}\n`
 }
