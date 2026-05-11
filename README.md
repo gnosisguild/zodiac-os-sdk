@@ -10,19 +10,30 @@ Programmatically manage [Zodiac](https://www.zodiac.eco) account constellations.
 npm install @zodiac-os/sdk
 ```
 
-### 2. Generate a Zodiac OS API key
+### 2. Authorize this directory
 
-Sign in to [app.zodiac.eco](https://app.zodiac.eco) and create an API key at [app.zodiac.eco/admin/api-keys](https://app.zodiac.eco/admin/api-keys).
+```bash
+zodiac init
+```
+
+Opens a browser tab so you can sign in, pick the org you want to use, and approve a new API key. The key (and matching `ZODIAC_API_URL`) are written to a `.env` file in your project root — labeled after the directory so you can find and revoke it later from [app.zodiac.eco/admin/api-keys](https://app.zodiac.eco/admin/api-keys). Add `.env` to your `.gitignore`.
+
+`zodiac init` runs automatically the first time you call `zodiac pull` (or `pull-org` / `pull-contracts`) without a key, so step 4 will trigger it for you if you skip this step.
 
 ### 3. Create a config file
 
-Create a `zodiac.config.ts` in your project root:
+Create a `zodiac.config.ts` in your project root. The CLI loads `.env` automatically, so reference the env var written by `zodiac init`:
 
 ```ts
 import { defineConfig } from '@zodiac-os/sdk/cli/config'
 
+const apiKey = process.env.ZODIAC_API_KEY
+if (!isZodiacApiKey(apiKey)) {
+  throw new Error('ZODIAC_API_KEY is missing or invalid. Run `zodiac init`.')
+}
+
 export default defineConfig({
-  apiKey: 'zodiac_...',
+  apiKey,
   // Optional: contracts to fetch for permissions authoring
   contracts: {
     mainnet: {
@@ -30,6 +41,10 @@ export default defineConfig({
     },
   },
 })
+
+function isZodiacApiKey(value: string | undefined): value is `zodiac_${string}` {
+  return value != null && value.startsWith('zodiac_')
+}
 ```
 
 ### 4. Pull your org data
@@ -163,6 +178,7 @@ Options:
   -h, --help           display help for command
 
 Commands:
+  init                 Authorize this directory with a Zodiac org. Opens a browser to mint an API key and writes it to .env.
   pull-org             Fetch Zodiac users and accounts, generate TypeScript types
   pull-contracts       Fetch contract ABIs, generate typed permissions kit
   pull                 Fetch Zodiac org and contracts ABI, generate SDK functions
