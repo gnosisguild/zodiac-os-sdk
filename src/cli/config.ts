@@ -146,9 +146,7 @@ const resolveApiKey = async (
   return minted
 }
 
-const isApiKey = (
-  value: string | undefined
-): value is `zodiac_${string}` =>
+const isApiKey = (value: string | undefined): value is `zodiac_${string}` =>
   value != null && value.startsWith('zodiac_')
 
 export const DEFAULT_ABIS_DIR = 'abis'
