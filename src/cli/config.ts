@@ -7,7 +7,14 @@ export type Contracts = {
 export type ContractsNode = `0x${string}` | { [name: string]: ContractsNode }
 
 export interface ZodiacConfig {
-  apiKey: `zodiac_${string}`
+  /**
+   * API key authorizing this directory against a Zodiac org.
+   *
+   * Optional — defaults to `process.env.ZODIAC_API_KEY` (populated by
+   * `zodiac init`). Set this explicitly only when you need to override
+   * the env var from inside the config file.
+   */
+  apiKey?: `zodiac_${string}`
   /**
    * Contracts the `allow` kit should know about, keyed by chain prefix.
    * Nested objects are allowed for grouping related addresses.
@@ -21,8 +28,9 @@ export interface ZodiacConfig {
   abisDir?: string
 }
 
-/** User-provided config plus the directory it was loaded from. */
-export interface ResolvedConfig extends ZodiacConfig {
+/** User-provided config plus the resolved API key + project root. */
+export interface ResolvedConfig extends Omit<ZodiacConfig, 'apiKey'> {
+  apiKey: `zodiac_${string}`
   rootDir: string
 }
 
@@ -33,7 +41,7 @@ export interface ResolvedConfig extends ZodiacConfig {
  * recursive `ContractsNode` union.
  */
 type DefineConfigInput = {
-  apiKey: `zodiac_${string}`
+  apiKey?: `zodiac_${string}`
   contracts?: Record<string, unknown>
   abisDir?: string
 }
@@ -81,12 +89,20 @@ export async function loadConfig(
     )
   }
 
-  if (!config.apiKey) {
-    throw new Error(`Config is missing required field "apiKey"`)
+  const apiKey = config.apiKey ?? process.env.ZODIAC_API_KEY
+  if (!isApiKey(apiKey)) {
+    throw new Error(
+      'ZODIAC_API_KEY is missing or invalid. Run `zodiac init` to generate one.'
+    )
   }
 
-  return { ...config, rootDir: dirname(absolutePath) }
+  return { ...config, apiKey, rootDir: dirname(absolutePath) }
 }
+
+const isApiKey = (
+  value: string | undefined
+): value is `zodiac_${string}` =>
+  value != null && value.startsWith('zodiac_')
 
 export const DEFAULT_ABIS_DIR = 'abis'
 

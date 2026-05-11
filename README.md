@@ -22,29 +22,18 @@ Opens a browser tab so you can sign in, pick the org you want to use, and approv
 
 ### 3. Create a config file
 
-Create a `zodiac.config.ts` in your project root. The CLI loads `.env` automatically, so reference the env var written by `zodiac init`:
+Create a `zodiac.config.ts` in your project root. The CLI picks up your API key from `ZODIAC_API_KEY` (written by `zodiac init`), so the config only needs the contracts you want to permission:
 
 ```ts
 import { defineConfig } from '@zodiac-os/sdk/cli/config'
 
-const apiKey = process.env.ZODIAC_API_KEY
-if (!isZodiacApiKey(apiKey)) {
-  throw new Error('ZODIAC_API_KEY is missing or invalid. Run `zodiac init`.')
-}
-
 export default defineConfig({
-  apiKey,
-  // Optional: contracts to fetch for permissions authoring
   contracts: {
     mainnet: {
       dai: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
     },
   },
 })
-
-function isZodiacApiKey(value: string | undefined): value is `zodiac_${string}` {
-  return value != null && value.startsWith('zodiac_')
-}
 ```
 
 ### 4. Pull your org data
