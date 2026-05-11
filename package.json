@@ -4,7 +4,7 @@
   "author": "Gnosis Guild",
   "license": "LGPL-3.0-only",
   "homepage": "https://github.com/gnosisguild/zodiac-os-sdk",
-  "packageManager": "bun@1.1.12",
+  "packageManager": "bun@1.3.12",
   "repository": {
     "url": "https://github.com/gnosisguild/zodiac-os-sdk"
   },
@@ -48,6 +48,8 @@
     "@epic-web/invariant": "1.0.0",
     "@zodiac-os/api-types": "1.6.0",
     "commander": "^14.0.3",
+    "dotenv": "^17.4.2",
+    "open": "^11.0.0",
     "ts-morph": "^27.0.2",
     "zodiac-roles-deployments": "^3.2.0",
     "zodiac-roles-sdk": "^3.4.7"

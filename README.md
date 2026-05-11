@@ -10,20 +10,24 @@ Programmatically manage [Zodiac](https://www.zodiac.eco) account constellations.
 npm install @zodiac-os/sdk
 ```
 
-### 2. Generate a Zodiac OS API key
+### 2. Authorize project
 
-Sign in to [app.zodiac.eco](https://app.zodiac.eco) and create an API key at [app.zodiac.eco/admin/api-keys](https://app.zodiac.eco/admin/api-keys).
+```bash
+zodiac init
+```
+
+Opens a browser tab so you can sign in, pick the org you want to use, and approve a new API key. The key (and matching `ZODIAC_API_URL`) are written to a `.env` file in your project root — labeled after the directory so you can find and revoke it later from [app.zodiac.eco/admin/api-keys](https://app.zodiac.eco/admin/api-keys).
+
+**IMPORTANT:** Make sure to add `.env` to your `.gitignore`.
 
 ### 3. Create a config file
 
-Create a `zodiac.config.ts` in your project root:
+Create a `zodiac.config.ts` in your project root.
 
 ```ts
 import { defineConfig } from '@zodiac-os/sdk/cli/config'
 
 export default defineConfig({
-  apiKey: 'zodiac_...',
-  // Optional: contracts to fetch for permissions authoring
   contracts: {
     mainnet: {
       dai: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
@@ -163,6 +167,7 @@ Options:
   -h, --help           display help for command
 
 Commands:
+  init                 Authorize this directory with a Zodiac org. Opens a browser to mint an API key and writes it to .env.
   pull-org             Fetch Zodiac users and accounts, generate TypeScript types
   pull-contracts       Fetch contract ABIs, generate typed permissions kit
   pull                 Fetch Zodiac org and contracts ABI, generate SDK functions
