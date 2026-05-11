@@ -186,7 +186,11 @@ const writeEnv = (envPath: string, vars: Record<string, string>): void => {
   writeFileSync(envPath, contents, 'utf8')
 }
 
-const upsertEnvLine = (contents: string, key: string, value: string): string => {
+const upsertEnvLine = (
+  contents: string,
+  key: string,
+  value: string
+): string => {
   const line = `${key}=${value}`
   const lines = contents.split(/\r?\n/)
   const idx = lines.findIndex((l) => new RegExp(`^\\s*${key}\\s*=`).test(l))
