@@ -67,7 +67,22 @@ export const defineConfig = <const T extends DefineConfigInput>(
   }
 ): T => config
 
-const DEFAULT_CONFIG_PATH = 'zodiac.config.ts'
+const CONFIG_BASENAME = 'zodiac.config'
+
+/**
+ * Extensions probed (in priority order) when the user doesn't pass an
+ * explicit `--config` path. Mirrors what vite / vitest / tailwind accept.
+ */
+const CONFIG_EXTENSIONS = [
+  '.ts',
+  '.mts',
+  '.cts',
+  '.js',
+  '.mjs',
+  '.cjs',
+] as const
+
+const DEFAULT_CONFIG_PATH = `${CONFIG_BASENAME}.ts`
 
 const CONFIG_STUB = `import { defineConfig } from "@zodiac-os/sdk/cli/config";
 
@@ -110,6 +125,24 @@ export const ensureConfigStub = (absolutePath: string): boolean => {
   return true
 }
 
+/**
+ * Turn a (possibly-default) config path into an absolute path under
+ * `projectRoot`. When the caller didn't pass an explicit path, probe
+ * for `zodiac.config.{ts,mts,cts,js,mjs,cjs}` and use whichever exists;
+ * fall back to the canonical `.ts` name so a not-found error is
+ * still phrased in terms users recognise.
+ */
+const resolveConfigPath = (projectRoot: string, configPath: string): string => {
+  const explicit = resolve(projectRoot, configPath)
+  if (configPath !== DEFAULT_CONFIG_PATH) return explicit
+
+  for (const ext of CONFIG_EXTENSIONS) {
+    const candidate = resolve(projectRoot, `${CONFIG_BASENAME}${ext}`)
+    if (existsSync(candidate)) return candidate
+  }
+  return explicit
+}
+
 export async function loadConfig(
   configPath: string = DEFAULT_CONFIG_PATH,
   options: LoadConfigOptions = {}
@@ -117,7 +150,8 @@ export async function loadConfig(
   // Resolve relative paths (including the default) against the nearest
   // package.json ancestor — that's where users expect the config to live,
   // regardless of which subdir they ran the CLI from.
-  const absolutePath = resolve(findProjectRoot(), configPath)
+  const projectRoot = findProjectRoot()
+  const absolutePath = resolveConfigPath(projectRoot, configPath)
 
   if (options.createIfMissing && ensureConfigStub(absolutePath)) {
     console.log(`✅ Created ${absolutePath}`)
