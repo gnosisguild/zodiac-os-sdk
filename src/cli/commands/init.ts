@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import {
   createServer,
   type IncomingMessage,
@@ -26,19 +26,29 @@ export const init = async (options: InitOptions = {}): Promise<string> => {
   ).replace(/\/$/, '')
 
   const label = basename(resolve(rootDir)) || 'zodiac-cli'
+
+  // PKCE: keep `code_verifier` private to this process. Send only the
+  // SHA-256 hash (`code_challenge`) over the wire.
+  const codeVerifier = randomBytes(32).toString('base64url')
+  const codeChallenge = createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url')
+
+  // `state` binds the redirect we receive on the loopback to this CLI
+  // invocation, defending against a stray local process trying to inject
+  // an auth code into our callback.
   const state = randomBytes(32).toString('base64url')
 
-  const appOrigin = new URL(appUrl).origin
-
-  const { port, waitForKey, close } = await startCallbackServer({
-    appOrigin,
+  const { port, waitForCode, close } = await startCallbackServer({
     expectedState: state,
+    appUrl,
   })
 
   const callbackUrl = `http://127.0.0.1:${port}/callback`
   const authUrl = new URL('/cli-auth', appUrl)
   authUrl.searchParams.set('callback', callbackUrl)
   authUrl.searchParams.set('state', state)
+  authUrl.searchParams.set('code_challenge', codeChallenge)
   authUrl.searchParams.set('label', label)
 
   console.log(
@@ -46,107 +56,127 @@ export const init = async (options: InitOptions = {}): Promise<string> => {
   )
   await open(authUrl.toString())
 
-  let key: string
+  let code: string
   try {
-    key = await waitForKey(CALLBACK_TIMEOUT_MS)
+    code = await waitForCode(CALLBACK_TIMEOUT_MS)
   } finally {
     await close()
   }
 
+  const apiKey = await exchangeCodeForKey(appUrl, code, codeVerifier)
+
   const envPath = join(rootDir, '.env')
   const apiUrl = `${appUrl}/api/v1`
-  writeEnv(envPath, { ZODIAC_API_KEY: key, ZODIAC_API_URL: apiUrl })
+  writeEnv(envPath, { ZODIAC_API_KEY: apiKey, ZODIAC_API_URL: apiUrl })
 
   console.log(`✅ API key written to ${envPath}`)
 
+  return apiKey
+}
+
+const exchangeCodeForKey = async (
+  appUrl: string,
+  code: string,
+  codeVerifier: string
+): Promise<string> => {
+  const response = await fetch(`${appUrl}/cli-auth/exchange`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code, code_verifier: codeVerifier }),
+  })
+
+  if (!response.ok) {
+    let detail = ''
+    try {
+      const body = (await response.json()) as { error?: string }
+      detail = body.error ? `: ${body.error}` : ''
+    } catch {
+      // ignore — fall through to a generic message
+    }
+    throw new Error(
+      `Failed to exchange auth code (${response.status})${detail}`
+    )
+  }
+
+  const { key } = (await response.json()) as { key: unknown }
+  if (typeof key !== 'string' || !key.startsWith('zodiac_')) {
+    throw new Error(
+      'Exchange endpoint returned an unexpected response (missing or malformed key)'
+    )
+  }
   return key
 }
 
 type StartServerOptions = {
-  appOrigin: string
   expectedState: string
+  appUrl: string
 }
 
 type StartServerResult = {
   port: number
-  waitForKey: (timeoutMs: number) => Promise<string>
+  waitForCode: (timeoutMs: number) => Promise<string>
   close: () => Promise<void>
 }
 
 const startCallbackServer = async ({
-  appOrigin,
   expectedState,
+  appUrl,
 }: StartServerOptions): Promise<StartServerResult> => {
-  let resolveKey: (key: string) => void = () => {}
-  let rejectKey: (err: Error) => void = () => {}
-  const keyPromise = new Promise<string>((res, rej) => {
-    resolveKey = res
-    rejectKey = rej
+  let resolveCode: (code: string) => void = () => {}
+  let rejectCode: (err: Error) => void = () => {}
+  const codePromise = new Promise<string>((res, rej) => {
+    resolveCode = res
+    rejectCode = rej
   })
 
   const handler = (req: IncomingMessage, res: ServerResponse) => {
-    const origin = req.headers.origin
-    const isAllowedOrigin = origin === appOrigin
-
-    // CORS / Private Network Access preflight + actual response headers.
-    if (isAllowedOrigin) {
-      res.setHeader('Access-Control-Allow-Origin', appOrigin)
-      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-      res.setHeader('Access-Control-Allow-Headers', 'content-type')
-      // Required for Chrome's Private Network Access preflight when an
-      // HTTPS page targets http://localhost.
-      if (req.headers['access-control-request-private-network'] === 'true') {
-        res.setHeader('Access-Control-Allow-Private-Network', 'true')
-      }
-    }
-
-    if (req.method === 'OPTIONS') {
-      res.statusCode = isAllowedOrigin ? 204 : 403
-      res.end()
-      return
-    }
-
-    if (req.method !== 'POST' || req.url !== '/callback') {
+    if (req.method !== 'GET' || !req.url?.startsWith('/callback')) {
       res.statusCode = 404
       res.end()
       return
     }
 
-    if (!isAllowedOrigin) {
-      res.statusCode = 403
-      res.end()
+    const url = new URL(req.url, `http://127.0.0.1`)
+    const code = url.searchParams.get('code')
+    const state = url.searchParams.get('state')
+
+    if (state !== expectedState) {
+      // A stray request — could be a stale browser tab, a malicious
+      // local process, etc. Silently 403 and keep waiting for the right
+      // one. Don't reject the CLI promise.
+      respondHtml(
+        res,
+        403,
+        renderHtml(
+          'Mismatched state',
+          `<p>This callback didn't match the running <code>zodiac init</code> session. You can close this tab.</p>`
+        )
+      )
       return
     }
 
-    const chunks: Buffer[] = []
-    req.on('data', (chunk: Buffer) => chunks.push(chunk))
-    req.on('end', () => {
-      try {
-        const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-        if (typeof body.state !== 'string' || body.state !== expectedState) {
-          // Don't reject — could be a stray request from a malicious local
-          // process. Stay silent and keep waiting for the real one.
-          res.statusCode = 403
-          res.end()
-          return
-        }
-        if (typeof body.key !== 'string' || !body.key.startsWith('zodiac_')) {
-          res.statusCode = 400
-          res.end()
-          return
-        }
-        // Force the connection to close after the response so the browser
-        // doesn't keep waiting on a keep-alive socket once the CLI exits.
-        // Resolve only after 'finish' (response handed to the OS) so the
-        // bytes can flush before the process tears down.
-        res.setHeader('Connection', 'close')
-        res.statusCode = 200
-        res.end(() => resolveKey(body.key))
-      } catch {
-        res.statusCode = 400
-        res.end()
-      }
-    })
+    if (typeof code !== 'string' || code.length === 0) {
+      respondHtml(
+        res,
+        400,
+        renderHtml(
+          'Missing code',
+          `<p>The callback URL didn't include an auth <code>code</code>. Please re-run <code>zodiac init</code>.</p>`
+        )
+      )
+      return
+    }
+
+    respondHtml(
+      res,
+      200,
+      renderHtml(
+        'Authorized',
+        `<p>Your CLI now has its API key. You can close this tab and return to your terminal.</p>
+         <p><a href="${escapeHtml(appUrl)}">Back to Zodiac</a></p>`
+      )
+    )
+    resolveCode(code)
   }
 
   const server = createServer(handler)
@@ -162,19 +192,58 @@ const startCallbackServer = async ({
       server.close(() => resolve())
     })
 
-  const waitForKey = (timeoutMs: number) =>
+  const waitForCode = (timeoutMs: number) =>
     Promise.race<string>([
-      keyPromise,
+      codePromise,
       new Promise<string>((_, rej) =>
         setTimeout(() => {
-          rejectKey(new Error(`Timed out waiting for CLI auth callback`))
+          rejectCode(new Error(`Timed out waiting for CLI auth callback`))
           rej(new Error(`Timed out waiting for CLI auth callback`))
         }, timeoutMs)
       ),
     ])
 
-  return { port, waitForKey, close }
+  return { port, waitForCode, close }
 }
+
+const respondHtml = (res: ServerResponse, status: number, body: string) => {
+  // Force the connection to close after the response so the browser
+  // doesn't keep waiting on a keep-alive socket once the CLI exits.
+  // Resolve only after 'finish' (response handed to the OS) so the
+  // bytes can flush before the process tears down.
+  res.setHeader('Connection', 'close')
+  res.setHeader('content-type', 'text/html; charset=utf-8')
+  res.statusCode = status
+  res.end(body)
+}
+
+const renderHtml = (title: string, bodyHtml: string) => `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(title)} — Zodiac CLI</title>
+    <style>
+      body { font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; color: #1f2937; }
+      h1 { font-weight: 300; font-size: 1.75rem; margin-bottom: 1rem; }
+      code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
+      a { color: #1d4ed8; }
+    </style>
+  </head>
+  <body>
+    <h1>${escapeHtml(title)}</h1>
+    ${bodyHtml}
+  </body>
+</html>
+`
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 
 const writeEnv = (envPath: string, vars: Record<string, string>): void => {
   let contents = existsSync(envPath) ? readFileSync(envPath, 'utf8') : ''
