@@ -126,7 +126,10 @@ async function nodeToSpec(
 
   for (const [key, value] of Object.entries(rest)) {
     if (node.type === 'ROLES' && key === 'roles' && value != null) {
-      spec.roles = await expandRoles(value as Record<string, RoleDef>, refs)
+      spec.roles = await expandRoles(
+        value as Record<string, RoleDef | null>,
+        refs
+      )
       continue
     }
     if (
@@ -135,9 +138,10 @@ async function nodeToSpec(
       value != null &&
       !Array.isArray(value)
     ) {
-      spec.allowances = resolveRefs(
-        Object.values(value as Record<string, AllowanceSpec>),
-        refs
+      spec.allowances = Object.fromEntries(
+        Object.entries(value as Record<string, AllowanceSpec | null>).map(
+          ([k, v]) => [k, v == null ? null : resolveRefs(v, refs)]
+        )
       )
       continue
     }
@@ -153,23 +157,30 @@ async function nodeToSpec(
 }
 
 async function expandRoles(
-  roles: Record<string, RoleDef>,
+  roles: Record<string, RoleDef | null>,
   refs: RefsIndex
-): Promise<unknown[]> {
-  return Promise.all(
+): Promise<Record<string, unknown>> {
+  const entries = await Promise.all(
     Object.entries(roles).map(async ([key, def]) => {
+      if (def == null) {
+        return [key, null] as const
+      }
       const resolvedPermissions = (await Promise.all(
         def.permissions.map((p) => Promise.resolve(p))
       )) as Parameters<typeof processPermissions>[0][number][]
       const { targets, annotations } = processPermissions(resolvedPermissions)
-      return {
+      return [
         key,
-        members: resolveRefs(def.members, refs),
-        targets,
-        annotations: [...(def.annotations ?? []), ...annotations],
-      }
+        {
+          key,
+          members: resolveRefs(def.members, refs),
+          targets,
+          annotations: [...(def.annotations ?? []), ...annotations],
+        },
+      ] as const
     })
   )
+  return Object.fromEntries(entries)
 }
 
 function resolveRefs(value: unknown, refs: RefsIndex): unknown {
