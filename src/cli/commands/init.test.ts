@@ -26,10 +26,10 @@ afterEach(() => {
   globalThis.fetch = originalFetch
 })
 
-type ExchangeStub = (body: {
-  code: string
-  code_verifier: string
-}) => { status: number; body?: unknown }
+type ExchangeStub = (body: { code: string; code_verifier: string }) => {
+  status: number
+  body?: unknown
+}
 
 const stubExchange = (handler: ExchangeStub) => {
   const realFetch = originalFetch
