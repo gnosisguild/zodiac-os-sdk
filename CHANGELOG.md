@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.9.0...v1.10.0) (2026-05-12)
+
+
+### Features
+
+* **cli:** auto-create zodiac.config.ts at project root on first run ([#30](https://github.com/gnosisguild/zodiac-os-sdk/issues/30)) ([8c32ae1](https://github.com/gnosisguild/zodiac-os-sdk/commit/8c32ae1909f1626a671b5f205e0e02f4dcf92d6b))
+
 ## [1.9.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.8.0...v1.9.0) (2026-05-12)
 
 
