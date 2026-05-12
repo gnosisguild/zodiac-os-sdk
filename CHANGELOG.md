@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.7.1...v1.8.0) (2026-05-11)
+
+
+### Features
+
+* **cli:** zodiac init — browser-flow API key setup ([#25](https://github.com/gnosisguild/zodiac-os-sdk/issues/25)) ([d51525f](https://github.com/gnosisguild/zodiac-os-sdk/commit/d51525fdd146f807da044ab5917314a03043c3eb))
+
 ## [1.7.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.7.0...v1.7.1) (2026-04-28)
 
 
