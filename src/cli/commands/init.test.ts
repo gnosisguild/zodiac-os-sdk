@@ -90,6 +90,35 @@ describe('init', () => {
     const envContents = readFileSync(join(tmpDir, '.env'), 'utf8')
     expect(envContents).toContain('ZODIAC_API_KEY=zodiac_test-key-1')
     expect(envContents).toContain(`ZODIAC_API_URL=${APP_URL}/api/v1`)
+
+    // First-run scaffolding: stub zodiac.config.ts dropped at rootDir.
+    const configContents = readFileSync(
+      join(tmpDir, 'zodiac.config.ts'),
+      'utf8'
+    )
+    expect(configContents).toContain('defineConfig')
+    expect(configContents).toContain('contracts')
+  })
+
+  it('does not overwrite an existing zodiac.config.ts', async () => {
+    mkdirSync(tmpDir, { recursive: true })
+    writeFileSync(
+      join(tmpDir, 'zodiac.config.ts'),
+      '// user-edited config',
+      'utf8'
+    )
+
+    stubExchange(() => ({ status: 200, body: { key: 'zodiac_keep' } }))
+
+    const { init } = await import('./init')
+    const initPromise = init({ rootDir: tmpDir, appUrl: APP_URL })
+
+    const { callbackUrl, state } = await waitForCapturedUrl()
+    await fetch(`${callbackUrl}?code=ok&state=${state}`)
+    await initPromise
+
+    const after = readFileSync(join(tmpDir, 'zodiac.config.ts'), 'utf8')
+    expect(after).toBe('// user-edited config')
   })
 
   it('rejects callbacks with a wrong state and keeps waiting', async () => {

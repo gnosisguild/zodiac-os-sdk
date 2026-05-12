@@ -7,6 +7,8 @@ import {
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import open from 'open'
+import { ensureConfigStub } from '../config'
+import { findProjectRoot } from '../projectRoot'
 
 const DEFAULT_APP_URL = 'https://app.zodiac.eco'
 const CALLBACK_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
@@ -18,7 +20,7 @@ type InitOptions = {
 }
 
 export const init = async (options: InitOptions = {}): Promise<string> => {
-  const rootDir = options.rootDir ?? process.cwd()
+  const rootDir = options.rootDir ?? findProjectRoot()
   const appUrl = (
     options.appUrl ??
     process.env.ZODIAC_APP_URL ??
@@ -70,6 +72,11 @@ export const init = async (options: InitOptions = {}): Promise<string> => {
   writeEnv(envPath, { ZODIAC_API_KEY: apiKey, ZODIAC_API_URL: apiUrl })
 
   console.log(`✅ API key written to ${envPath}`)
+
+  const configPath = join(rootDir, 'zodiac.config.ts')
+  if (ensureConfigStub(configPath)) {
+    console.log(`✅ Created ${configPath}`)
+  }
 
   return apiKey
 }

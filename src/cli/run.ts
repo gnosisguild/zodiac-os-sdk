@@ -10,6 +10,7 @@ loadDotenv({ quiet: true })
 
 const loadConfigOrInit = (configPath: string) =>
   loadConfig(configPath, {
+    createIfMissing: true,
     onMissingKey: async (rootDir) => {
       console.log(
         'No ZODIAC_API_KEY found. Starting authorization to mint one for this directory…'

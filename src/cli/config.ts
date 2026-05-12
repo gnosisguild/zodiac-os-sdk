@@ -1,5 +1,7 @@
+import { existsSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'url'
 import { dirname, resolve } from 'path'
+import { findProjectRoot } from './projectRoot'
 
 export type Contracts = {
   [chain: string]: ContractsNode
@@ -67,6 +69,20 @@ export const defineConfig = <const T extends DefineConfigInput>(
 
 const DEFAULT_CONFIG_PATH = 'zodiac.config.ts'
 
+const CONFIG_STUB = `import { defineConfig } from "@zodiac-os/sdk/cli/config";
+
+export default defineConfig({
+  contracts: {
+    // Add contracts the \`allow\` kit should know about, keyed by chain prefix.
+    // Run \`zodiac pull-contracts\` after editing.
+    //
+    // eth: {
+    //   weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    // },
+  },
+});
+`
+
 type LoadConfigOptions = {
   /**
    * Called when neither `config.apiKey` nor `process.env.ZODIAC_API_KEY` is
@@ -76,13 +92,36 @@ type LoadConfigOptions = {
    * If omitted, `loadConfig` throws when no key is found.
    */
   onMissingKey?: (rootDir: string) => Promise<string>
+  /**
+   * When the config file doesn't exist, write a minimal stub before
+   * loading. Used by the CLI's `pull` commands so first-time setup
+   * works without the user having to scaffold the file themselves.
+   */
+  createIfMissing?: boolean
+}
+
+/**
+ * Write a starter `zodiac.config.ts` if no file exists at `absolutePath`.
+ * Returns `true` if a file was written.
+ */
+export const ensureConfigStub = (absolutePath: string): boolean => {
+  if (existsSync(absolutePath)) return false
+  writeFileSync(absolutePath, CONFIG_STUB, 'utf8')
+  return true
 }
 
 export async function loadConfig(
   configPath: string = DEFAULT_CONFIG_PATH,
   options: LoadConfigOptions = {}
 ): Promise<ResolvedConfig> {
-  const absolutePath = resolve(process.cwd(), configPath)
+  // Resolve relative paths (including the default) against the nearest
+  // package.json ancestor — that's where users expect the config to live,
+  // regardless of which subdir they ran the CLI from.
+  const absolutePath = resolve(findProjectRoot(), configPath)
+
+  if (options.createIfMissing && ensureConfigStub(absolutePath)) {
+    console.log(`✅ Created ${absolutePath}`)
+  }
 
   let mod: Record<string, unknown>
   try {

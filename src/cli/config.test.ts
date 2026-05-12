@@ -1,8 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { loadConfig } from './config'
+import { ensureConfigStub, loadConfig } from './config'
 
 const ENV_KEY = 'ZODIAC_API_KEY'
 
@@ -13,6 +20,8 @@ let originalCwd: string
 beforeEach(() => {
   tmpDir = join(tmpdir(), `zodiac-config-test-${Date.now()}-${Math.random()}`)
   mkdirSync(tmpDir, { recursive: true })
+  // Anchor findProjectRoot here so loadConfig resolves against tmpDir.
+  writeFileSync(join(tmpDir, 'package.json'), '{}')
   originalEnv = process.env[ENV_KEY]
   delete process.env[ENV_KEY]
   originalCwd = process.cwd()
@@ -99,5 +108,50 @@ describe('loadConfig', () => {
         onMissingKey: async () => 'definitely-not-a-key',
       })
     ).rejects.toThrow(/onMissingKey returned an invalid/)
+  })
+
+  it('throws when the config file does not exist and createIfMissing is off', async () => {
+    await expect(loadConfig('zodiac.config.ts')).rejects.toThrow(
+      /Config file not found/
+    )
+  })
+
+  it('resolves the default config path against the nearest package.json ancestor', async () => {
+    process.env[ENV_KEY] = 'zodiac_from-env'
+    writeConfig('{}')
+    const nested = join(tmpDir, 'apps', 'web')
+    mkdirSync(nested, { recursive: true })
+    process.chdir(nested)
+
+    const config = await loadConfig()
+
+    // macOS: tmpdir() lives under /var (symlink), process.cwd() canonicalizes
+    // to /private/var; compare via realpath so we don't get false negatives.
+    expect(config.rootDir).toBe(realpathSync(tmpDir))
+  })
+})
+
+describe('ensureConfigStub', () => {
+  it('writes a starter config when the file is missing', () => {
+    const path = join(tmpDir, 'zodiac.config.ts')
+    expect(existsSync(path)).toBe(false)
+
+    const created = ensureConfigStub(path)
+
+    expect(created).toBe(true)
+    expect(existsSync(path)).toBe(true)
+    const contents = readFileSync(path, 'utf8')
+    expect(contents).toContain('defineConfig')
+    expect(contents).toContain('contracts')
+  })
+
+  it('does not overwrite an existing config', () => {
+    const path = join(tmpDir, 'zodiac.config.ts')
+    writeFileSync(path, '// existing', 'utf8')
+
+    const created = ensureConfigStub(path)
+
+    expect(created).toBe(false)
+    expect(readFileSync(path, 'utf8')).toBe('// existing')
   })
 })
