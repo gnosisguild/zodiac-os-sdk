@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.8.0...v1.9.0) (2026-05-12)
+
+
+### Features
+
+* **cli:** PKCE auth-code flow for zodiac init ([#27](https://github.com/gnosisguild/zodiac-os-sdk/issues/27)) ([161861f](https://github.com/gnosisguild/zodiac-os-sdk/commit/161861f4e505537ca82e0def59dfe6e01bc8459d))
+
 ## [1.8.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.7.1...v1.8.0) (2026-05-11)
 
 
