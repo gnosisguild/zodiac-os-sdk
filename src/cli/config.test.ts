@@ -116,6 +116,46 @@ describe('loadConfig', () => {
     )
   })
 
+  it('discovers `zodiac.config.mjs` when no `.ts` exists', async () => {
+    process.env[ENV_KEY] = 'zodiac_from-env'
+    writeFileSync(
+      join(tmpDir, 'zodiac.config.mjs'),
+      `export default { /* mjs */ }\n`,
+      'utf8'
+    )
+
+    const config = await loadConfig()
+
+    expect(config.apiKey).toBe('zodiac_from-env')
+  })
+
+  it('prefers `.ts` over other extensions when both are present', async () => {
+    process.env[ENV_KEY] = 'zodiac_from-env'
+    writeConfig(`{ apiKey: 'zodiac_from-ts' }`)
+    writeFileSync(
+      join(tmpDir, 'zodiac.config.mjs'),
+      `export default { apiKey: 'zodiac_from-mjs' }\n`,
+      'utf8'
+    )
+
+    const config = await loadConfig()
+
+    expect(config.apiKey).toBe('zodiac_from-ts')
+  })
+
+  it('discovers `zodiac.config.js`', async () => {
+    process.env[ENV_KEY] = 'zodiac_from-env'
+    writeFileSync(
+      join(tmpDir, 'zodiac.config.js'),
+      `export default { /* js */ }\n`,
+      'utf8'
+    )
+
+    const config = await loadConfig()
+
+    expect(config.apiKey).toBe('zodiac_from-env')
+  })
+
   it('resolves the default config path against the nearest package.json ancestor', async () => {
     process.env[ENV_KEY] = 'zodiac_from-env'
     writeConfig('{}')
