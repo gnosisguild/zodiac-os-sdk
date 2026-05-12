@@ -139,12 +139,10 @@ export type RolesNode = NodeBase &
     /** Role definitions configured on this modifier. Pass `null` for a key to
      * clear that role; unmentioned roles are left untouched. */
     roles?: Record<string, RoleDef | null>
-    /** Spending allowances configured on this modifier. Either an array or
-     * a Record keyed by name. With the Record form, pass `null` for a key to
-     * clear that allowance; unmentioned allowances are left untouched. */
-    allowances?:
-      | readonly AllowanceSpec[]
-      | Record<string, AllowanceSpec | null>
+    /** Spending allowances configured on this modifier, keyed by name. Pass
+     * `null` for a key to clear that allowance; unmentioned allowances are
+     * left untouched. */
+    allowances?: Record<string, AllowanceSpec | null>
   }>
 
 /** Any complete node that can be passed to `push()`. */
@@ -180,12 +178,10 @@ type NewRolesProps = {
   /** Role definitions to configure on this modifier. Pass `null` for a key to
    * clear that role; unmentioned roles are left untouched. */
   roles?: Record<string, RoleDef | null>
-  /** Spending allowances to configure on this modifier. Either an array or
-   * a Record keyed by name. With the Record form, pass `null` for a key to
-   * clear that allowance; unmentioned allowances are left untouched. */
-  allowances?:
-    | readonly AllowanceSpec[]
-    | Record<string, AllowanceSpec | null>
+  /** Spending allowances to configure on this modifier, keyed by name. Pass
+   * `null` for a key to clear that allowance; unmentioned allowances are
+   * left untouched. */
+  allowances?: Record<string, AllowanceSpec | null>
 }
 
 type ExistingNodeAccessor<

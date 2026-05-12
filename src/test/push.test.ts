@@ -205,43 +205,6 @@ describe('push', () => {
     })
   })
 
-  it('passes array-form allowances through unchanged', async () => {
-    const eth = setup()
-
-    const safe = eth.safe['GG DAO']
-    const roles = eth.roles['GG DAO']({
-      nonce: 0n,
-      owner: safe,
-      target: safe,
-      avatar: safe,
-      allowances: [
-        {
-          key: encodeKey('usdm_user_payouts'),
-          refill: 1000n,
-          maxRefill: 1000n,
-          period: 86400n,
-          balance: 1000n,
-          timestamp: 0n,
-        },
-      ],
-    })
-
-    const { api, lastPayload } = mockApi()
-    await push({ safe, roles }, { api })
-
-    const spec = lastPayload().specification[1]
-    expect(spec.allowances).toEqual([
-      {
-        key: encodeKey('usdm_user_payouts'),
-        refill: '1000',
-        maxRefill: '1000',
-        period: '86400',
-        balance: '1000',
-        timestamp: '0',
-      },
-    ])
-  })
-
   it('preserves Record-form roles so unmentioned roles are not cleared', async () => {
     const eth = setup()
 

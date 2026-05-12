@@ -132,12 +132,7 @@ async function nodeToSpec(
       )
       continue
     }
-    if (
-      node.type === 'ROLES' &&
-      key === 'allowances' &&
-      value != null &&
-      !Array.isArray(value)
-    ) {
+    if (node.type === 'ROLES' && key === 'allowances' && value != null) {
       spec.allowances = Object.fromEntries(
         Object.entries(value as Record<string, AllowanceSpec | null>).map(
           ([k, v]) => [k, v == null ? null : resolveRefs(v, refs)]
