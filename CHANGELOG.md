@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.11.0...v1.11.1) (2026-05-13)
+
+
+### Bug Fixes
+
+* **config:** narrow resolveAbisDir param so callers don't need apiKey ([#35](https://github.com/gnosisguild/zodiac-os-sdk/issues/35)) ([47ff081](https://github.com/gnosisguild/zodiac-os-sdk/commit/47ff0816db965391dec30a2ebb53e07d201537a0))
+
 ## [1.11.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.10.0...v1.11.0) (2026-05-13)
 
 
