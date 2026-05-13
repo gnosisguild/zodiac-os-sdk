@@ -90,12 +90,21 @@ type RolesEntries<
 type NodeType = 'SAFE' | 'ROLES' | 'DELAY'
 
 /** A reference to a node used in `owners`, `modules`, `target`, etc. */
-type NodeRef = Readonly<{ type: NodeType; label: string; chain: ChainId }>
+export type NodeRef = Readonly<{
+  type: NodeType
+  label: string
+  chain: ChainId
+}>
 
 /** A blockchain address (checksummed or lowercase) or a reference to another
  * node in the constellation. Values are normalized to lowercase before being
  * sent to the API. */
-type AddressOrRef = Address | NodeRef
+export type AddressOrRef = Address | NodeRef
+
+/** Member list for a role: addresses, user accessors (which resolve to
+ * addresses), or node references (e.g. `eth.safe["Treasury"]`). Use with
+ * `satisfies Members` in `constellation/roles/<role>/members.ts`. */
+export type Members = readonly AddressOrRef[]
 
 type NodeBase = Readonly<{
   /** Human-readable identifier, unique within the constellation. */
