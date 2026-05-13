@@ -167,7 +167,7 @@ describe('push', () => {
     expect(specs[1].target).toBe('$safe')
   })
 
-  it('accepts Record-form allowances and serializes them as an array', async () => {
+  it('preserves Record-form allowances so unmentioned entries are not cleared', async () => {
     const eth = setup()
 
     const usdm_user_payouts = {
@@ -185,15 +185,15 @@ describe('push', () => {
       owner: safe,
       target: safe,
       avatar: safe,
-      allowances: { usdm_user_payouts },
+      allowances: { usdm_user_payouts, deprecated: null },
     })
 
     const { api, lastPayload } = mockApi()
     await push({ safe, roles }, { api })
 
     const spec = lastPayload().specification[1]
-    expect(spec.allowances).toEqual([
-      {
+    expect(spec.allowances).toEqual({
+      usdm_user_payouts: {
         key: encodeKey('usdm_user_payouts'),
         refill: '1000',
         maxRefill: '1000',
@@ -201,10 +201,11 @@ describe('push', () => {
         balance: '1000',
         timestamp: '0',
       },
-    ])
+      deprecated: null,
+    })
   })
 
-  it('passes array-form allowances through unchanged', async () => {
+  it('preserves Record-form roles so unmentioned roles are not cleared', async () => {
     const eth = setup()
 
     const safe = eth.safe['GG DAO']
@@ -213,32 +214,28 @@ describe('push', () => {
       owner: safe,
       target: safe,
       avatar: safe,
-      allowances: [
-        {
-          key: encodeKey('usdm_user_payouts'),
-          refill: 1000n,
-          maxRefill: 1000n,
-          period: 86400n,
-          balance: 1000n,
-          timestamp: 0n,
+      roles: {
+        eth_wrapping: {
+          members: [],
+          permissions: [],
         },
-      ],
+        deprecated: null,
+      },
     })
 
     const { api, lastPayload } = mockApi()
     await push({ safe, roles }, { api })
 
     const spec = lastPayload().specification[1]
-    expect(spec.allowances).toEqual([
-      {
-        key: encodeKey('usdm_user_payouts'),
-        refill: '1000',
-        maxRefill: '1000',
-        period: '86400',
-        balance: '1000',
-        timestamp: '0',
+    expect(spec.roles).toEqual({
+      eth_wrapping: {
+        key: 'eth_wrapping',
+        members: [],
+        targets: [],
+        annotations: [],
       },
-    ])
+      deprecated: null,
+    })
   })
 
   it('throws for invalid nodes', async () => {

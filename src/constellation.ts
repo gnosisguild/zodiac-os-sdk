@@ -136,11 +136,13 @@ export type RolesNode = NodeBase &
     avatar?: AddressOrRef
     /** MultiSend contract addresses for batched transactions. */
     multisend?: readonly Address[]
-    /** Role definitions configured on this modifier. */
-    roles?: Record<string, RoleDef>
-    /** Spending allowances configured on this modifier. Either an array or
-     * a Record keyed by name — both forms carry the same allowance specs. */
-    allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
+    /** Role definitions configured on this modifier. Pass `null` for a key to
+     * clear that role; unmentioned roles are left untouched. */
+    roles?: Record<string, RoleDef | null>
+    /** Spending allowances configured on this modifier, keyed by name. Pass
+     * `null` for a key to clear that allowance; unmentioned allowances are
+     * left untouched. */
+    allowances?: Record<string, AllowanceSpec | null>
   }>
 
 /** Any complete node that can be passed to `push()`. */
@@ -173,11 +175,13 @@ type NewRolesProps = {
   owner?: AddressOrRef
   /** MultiSend contract addresses for batched transactions. Defaults to `['0x38869bf66a61cf6bdb996a6ae40d5853fd43b526', '0x9641d764fc13c8b624c04430c7356c1c7c8102e2']` */
   multisend?: readonly Address[]
-  /** Role definitions to configure on this modifier. */
-  roles?: Record<string, RoleDef>
-  /** Spending allowances to configure on this modifier. Either an array or
-   * a Record keyed by name — both forms carry the same allowance specs. */
-  allowances?: readonly AllowanceSpec[] | Record<string, AllowanceSpec>
+  /** Role definitions to configure on this modifier. Pass `null` for a key to
+   * clear that role; unmentioned roles are left untouched. */
+  roles?: Record<string, RoleDef | null>
+  /** Spending allowances to configure on this modifier, keyed by name. Pass
+   * `null` for a key to clear that allowance; unmentioned allowances are
+   * left untouched. */
+  allowances?: Record<string, AllowanceSpec | null>
 }
 
 type ExistingNodeAccessor<

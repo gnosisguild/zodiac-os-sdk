@@ -12,7 +12,6 @@ import type {
   ConstellationNodeInternal,
   RoleDef,
 } from './constellation'
-import type { AllowanceSpec } from './types'
 
 type PushOpts = {
   /** API client instance. Defaults to a client configured from environment variables. */
@@ -126,17 +125,8 @@ async function nodeToSpec(
 
   for (const [key, value] of Object.entries(rest)) {
     if (node.type === 'ROLES' && key === 'roles' && value != null) {
-      spec.roles = await expandRoles(value as Record<string, RoleDef>, refs)
-      continue
-    }
-    if (
-      node.type === 'ROLES' &&
-      key === 'allowances' &&
-      value != null &&
-      !Array.isArray(value)
-    ) {
-      spec.allowances = resolveRefs(
-        Object.values(value as Record<string, AllowanceSpec>),
+      spec.roles = await expandRoles(
+        value as Record<string, RoleDef | null>,
         refs
       )
       continue
@@ -153,23 +143,30 @@ async function nodeToSpec(
 }
 
 async function expandRoles(
-  roles: Record<string, RoleDef>,
+  roles: Record<string, RoleDef | null>,
   refs: RefsIndex
-): Promise<unknown[]> {
-  return Promise.all(
+): Promise<Record<string, unknown>> {
+  const entries = await Promise.all(
     Object.entries(roles).map(async ([key, def]) => {
+      if (def == null) {
+        return [key, null] as const
+      }
       const resolvedPermissions = (await Promise.all(
         def.permissions.map((p) => Promise.resolve(p))
       )) as Parameters<typeof processPermissions>[0][number][]
       const { targets, annotations } = processPermissions(resolvedPermissions)
-      return {
+      return [
         key,
-        members: resolveRefs(def.members, refs),
-        targets,
-        annotations: [...(def.annotations ?? []), ...annotations],
-      }
+        {
+          key,
+          members: resolveRefs(def.members, refs),
+          targets,
+          annotations: [...(def.annotations ?? []), ...annotations],
+        },
+      ] as const
     })
   )
+  return Object.fromEntries(entries)
 }
 
 function resolveRefs(value: unknown, refs: RefsIndex): unknown {
