@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.10.0...v1.11.0) (2026-05-13)
+
+
+### Features
+
+* **cli:** accept zodiac.config.{ts,mts,cts,js,mjs,cjs} ([#32](https://github.com/gnosisguild/zodiac-os-sdk/issues/32)) ([e728b37](https://github.com/gnosisguild/zodiac-os-sdk/commit/e728b37ea75cac8813cd7637fa19f1cd0795a412))
+
+
+### Bug Fixes
+
+* **push:** preserve Record-form roles and allowances ([#34](https://github.com/gnosisguild/zodiac-os-sdk/issues/34)) ([3239e75](https://github.com/gnosisguild/zodiac-os-sdk/commit/3239e7598d84886774bdd14b3da8850f19a2d21c))
+
 ## [1.10.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.9.0...v1.10.0) (2026-05-12)
 
 
