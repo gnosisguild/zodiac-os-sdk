@@ -224,6 +224,16 @@ const isApiKey = (value: string | undefined): value is `zodiac_${string}` =>
 
 export const DEFAULT_ABIS_DIR = 'abis'
 
-export function resolveAbisDir(config: ResolvedConfig): string {
+/**
+ * Resolves the absolute path to the ABIs directory. Only `rootDir` (and
+ * optionally `abisDir`) are read, so the parameter is intentionally narrower
+ * than `ResolvedConfig`: userland code can pass `{ ...config, rootDir }`
+ * without first satisfying `apiKey` (normally supplied via the
+ * `ZODIAC_API_KEY` env var at runtime).
+ */
+export function resolveAbisDir(config: {
+  rootDir: string
+  abisDir?: string
+}): string {
   return resolve(config.rootDir, config.abisDir ?? DEFAULT_ABIS_DIR)
 }
