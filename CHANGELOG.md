@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.11.1...v1.11.2) (2026-06-23)
+
+
+### Bug Fixes
+
+* **cli:** respect ZODIAC_API_URL, make pull primary, bind roles by address ([#38](https://github.com/gnosisguild/zodiac-os-sdk/issues/38)) ([6f6768b](https://github.com/gnosisguild/zodiac-os-sdk/commit/6f6768ba1b81cc7a867841366171550cfe891657))
+
 ## [1.11.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.11.0...v1.11.1) (2026-05-13)
 
 
