@@ -32,8 +32,6 @@ export const run = async (argv: string[] = process.argv) => {
       'zodiac.config.ts'
     )
 
-  // `pull` is the primary command: on first run it authorizes this directory
-  // automatically (no need to run `init` yourself), then fetches everything.
   program
     .command('pull')
     .description(
@@ -60,8 +58,6 @@ export const run = async (argv: string[] = process.argv) => {
       await pullContracts(config)
     })
 
-  // Escape hatch: `pull` runs this implicitly on first use. Only needed to
-  // re-authorize or mint a new key for an already-set-up directory.
   program
     .command('init')
     .description(
