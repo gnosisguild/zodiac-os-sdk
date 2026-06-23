@@ -102,8 +102,9 @@ type NodeBase = Readonly<{
   label: string
   /** Chain the node is deployed on. */
   chain: ChainId
-  /** Set for existing nodes from codegen, absent for new nodes. */
-  address?: Lowercase<Address>
+  /** Set for existing nodes (from codegen or bound by address), absent for new
+   * nodes. Accepts checksummed or lowercase; normalized to lowercase on push. */
+  address?: Address
   /** Deployment nonce — required for new nodes, optional for existing. */
   nonce?: bigint
 }>
@@ -164,9 +165,8 @@ type NewSafeProps = {
   vault?: boolean
 }
 
-type NewRolesProps = {
-  /** Deployment nonce for CREATE2 address derivation. */
-  nonce: bigint
+/** Configuration shared by both ways of declaring a roles modifier. */
+type RolesConfig = {
   /** The safe that this roles modifier controls. Defaults to the new safe with the same label, when one exists. */
   target?: AddressOrRef
   /** The account that calls will be executed from. Defaults to `target` value */
@@ -183,6 +183,22 @@ type NewRolesProps = {
    * left untouched. */
   allowances?: Record<string, AllowanceSpec | null>
 }
+
+/** Declare a brand-new roles modifier (address derived via CREATE2 from `nonce`). */
+type NewRolesByNonce = RolesConfig & {
+  /** Deployment nonce for CREATE2 address derivation. */
+  nonce: bigint
+}
+
+/** Bind to a roles modifier already deployed on-chain at a known address, to
+ * reconfigure its roles/allowances. Use this for mods not (yet) imported into
+ * the workspace — pass the address instead of a deployment `nonce`. */
+type ExistingRolesByAddress = RolesConfig & {
+  /** Address of the existing Roles mod to bind to and reconfigure. */
+  address: Address
+}
+
+type NewRolesProps = NewRolesByNonce | ExistingRolesByAddress
 
 type ExistingNodeAccessor<
   Type extends string,
@@ -211,9 +227,9 @@ type NewNodeAccessor<
   Ch extends ChainId,
   NP extends Record<string, any>,
 > = Readonly<Prettify<{ type: Type; label: string; chain: Ch }>> &
-  ((
-    props: NP
-  ) => Readonly<Prettify<NP & { type: Type; label: string; chain: Ch }>>)
+  (<P extends NP>(
+    props: P
+  ) => Readonly<Prettify<P & { type: Type; label: string; chain: Ch }>>)
 
 type EntityAccessor<
   Type extends string,

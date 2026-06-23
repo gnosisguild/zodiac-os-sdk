@@ -32,17 +32,16 @@ export const run = async (argv: string[] = process.argv) => {
       'zodiac.config.ts'
     )
 
+  // `pull` is the primary command: on first run it authorizes this directory
+  // automatically (no need to run `init` yourself), then fetches everything.
   program
-    .command('init')
+    .command('pull')
     .description(
-      'Authorize this directory with a Zodiac org. Opens a browser to mint an API key and writes it to .env.'
+      'Fetch Zodiac org data and contract ABIs, generating typed SDK functions. Authorizes this directory automatically on first run.'
     )
-    .option(
-      '--app-url <url>',
-      'Override the Zodiac app URL (defaults to ZODIAC_APP_URL or app.zodiac.eco)'
-    )
-    .action(async (opts) => {
-      await init({ appUrl: opts.appUrl })
+    .action(async (_opts, cmd) => {
+      const config = await loadConfigOrInit(cmd.optsWithGlobals().config)
+      await Promise.all([pullOrg(config), pullContracts(config)])
     })
 
   program
@@ -61,12 +60,19 @@ export const run = async (argv: string[] = process.argv) => {
       await pullContracts(config)
     })
 
+  // Escape hatch: `pull` runs this implicitly on first use. Only needed to
+  // re-authorize or mint a new key for an already-set-up directory.
   program
-    .command('pull')
-    .description('Fetch Zodiac org and contracts ABI, generate SDK functions')
-    .action(async (_opts, cmd) => {
-      const config = await loadConfigOrInit(cmd.optsWithGlobals().config)
-      await Promise.all([pullOrg(config), pullContracts(config)])
+    .command('init')
+    .description(
+      'Re-authorize this directory / mint a new API key (run automatically by `pull` on first use).'
+    )
+    .option(
+      '--app-url <url>',
+      'Override the Zodiac app URL (defaults to ZODIAC_APP_URL or app.zodiac.eco)'
+    )
+    .action(async (opts) => {
+      await init({ appUrl: opts.appUrl })
     })
 
   await program.parseAsync(argv)

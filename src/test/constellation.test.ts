@@ -122,6 +122,33 @@ describe('constellation API', () => {
       expect(newRoles.nonce).toBe(123n)
       expect(newRoles.target).toBe(ggDao)
     })
+
+    it('binds to an existing roles mod by address (no nonce)', () => {
+      const eth = constellation(
+        { workspace: 'GG', label: 'l', chain: 1 },
+        { codegen }
+      )
+
+      const existingRoles = eth.roles['Existing roles mod']({
+        address: '0x88A51CcB262d04B334065Ad425928dF79c4CB7d7',
+        roles: {},
+      })
+
+      expect(existingRoles.type).toBe('ROLES')
+      expect(existingRoles.address).toBe(
+        '0x88A51CcB262d04B334065Ad425928dF79c4CB7d7'
+      )
+      expect(existingRoles.label).toBe('Existing roles mod')
+    })
+
+    it('rejects a roles mod declared with neither nonce nor address', () => {
+      const eth = constellation(
+        { workspace: 'GG', label: 'l', chain: 1 },
+        { codegen }
+      )
+      // @ts-expect-error — must provide either `nonce` (new) or `address` (existing)
+      eth.roles['Incomplete']({ roles: {} })
+    })
   })
 
   describe('user accessor', () => {
