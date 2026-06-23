@@ -18,8 +18,7 @@ export type Options = {
   headers?: Record<string, string>
 }
 
-const { ZODIAC_API_KEY, ZODIAC_API_URL = 'https://app.zodiac.eco/api/v1' } =
-  process.env
+const DEFAULT_API_URL = 'https://app.zodiac.eco/api/v1'
 
 export class ApiClient {
   private apiKey: string
@@ -28,10 +27,14 @@ export class ApiClient {
   private headers: Record<string, string>
 
   constructor({
-    baseUrl = ZODIAC_API_URL,
+    // Read `ZODIAC_API_URL`/`ZODIAC_API_KEY` lazily at construction time
+    // rather than at module load: the CLI loads `.env` (and `init` writes a
+    // fresh one) before the first client is created, so capturing them at
+    // import time would bake in the default and ignore the user's config.
+    baseUrl = process.env.ZODIAC_API_URL ?? DEFAULT_API_URL,
     fetch: customFetch = fetch,
     headers = {},
-    apiKey = ZODIAC_API_KEY,
+    apiKey = process.env.ZODIAC_API_KEY,
   }: Options = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, '')
     this._fetch = customFetch

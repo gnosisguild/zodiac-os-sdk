@@ -71,6 +71,10 @@ export const init = async (options: InitOptions = {}): Promise<string> => {
   const apiUrl = `${appUrl}/api/v1`
   writeEnv(envPath, { ZODIAC_API_KEY: apiKey, ZODIAC_API_URL: apiUrl })
 
+  // So a same-run `pull` targets the org we just authorized, not the default.
+  process.env.ZODIAC_API_KEY = apiKey
+  process.env.ZODIAC_API_URL = apiUrl
+
   console.log(`✅ API key written to ${envPath}`)
 
   const configPath = join(rootDir, 'zodiac.config.ts')
