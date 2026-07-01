@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.11.2...v1.12.0) (2026-07-01)
+
+
+### Features
+
+* adopt zodiac-roles-sdk v4 (+ CLI pull-flow fixes) ([#40](https://github.com/gnosisguild/zodiac-os-sdk/issues/40)) ([37cf7d3](https://github.com/gnosisguild/zodiac-os-sdk/commit/37cf7d34a58b842873e47440b258c5daa012d849))
+
 ## [1.11.2](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.11.1...v1.11.2) (2026-06-23)
 
 
