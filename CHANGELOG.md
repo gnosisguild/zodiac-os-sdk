@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.12.0...v1.12.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* adopt @zodiac-os/api-types v4-compatible types (^1.6.2) ([#42](https://github.com/gnosisguild/zodiac-os-sdk/issues/42)) ([30166d3](https://github.com/gnosisguild/zodiac-os-sdk/commit/30166d309dfead6c08cab57e8d72ecdc67333550))
+
 ## [1.12.0](https://github.com/gnosisguild/zodiac-os-sdk/compare/v1.11.2...v1.12.0) (2026-07-01)
 
 
