@@ -1,11 +1,10 @@
 import { Interface, FunctionFragment, isError, type InterfaceAbi } from 'ethers'
-import { c, coercePermission } from 'zodiac-roles-sdk'
+import { c, coercePermission, ParameterType, Operator } from 'zodiac-roles-sdk'
 import type {
   Condition,
   FunctionPermission,
   TargetPermission,
 } from 'zodiac-roles-sdk'
-import { ParameterType, Operator } from 'zodiac-roles-deployments'
 import { readAbi, walkContracts, type ContractNode } from './abi'
 import { EVERYTHING, type Options } from './types'
 
